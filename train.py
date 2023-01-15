@@ -57,7 +57,7 @@ def run(rank, n_gpus, hps):
         writer = SummaryWriter(log_dir=hps.model_dir)
         writer_eval = SummaryWriter(log_dir=os.path.join(hps.model_dir, "eval"))
 
-    dist.init_process_group(backend='nccl', init_method='env://', world_size=n_gpus, rank=rank)
+    dist.init_process_group(backend='gloo', init_method='env://', world_size=n_gpus, rank=rank)
     torch.manual_seed(hps.train.seed)
     torch.cuda.set_device(rank)
 
@@ -276,6 +276,7 @@ def evaluate(hps, generator, eval_loader, writer_eval):
     )
     generator.train()
 
+os.environ["PL_TORCH_DISTRIBUTED_BACKEND"] = "gloo"
 
 if __name__ == "__main__":
     main()
