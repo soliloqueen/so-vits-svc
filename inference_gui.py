@@ -69,6 +69,12 @@ class MainWindow (QMainWindow):
         self.layout.addWidget(self.convert_button)
         self.convert_button.clicked.connect(self.convert)
 
+    def model_file_name(self):
+        if self.model_path is None:
+            return None
+        sp = self.model_path.replace('\\','/').split('/')[-1]
+        return str(Path(sp).with_suffix(''))
+
     def model_dialog(self):
         self.model_path = QFileDialog.getOpenFileName(
             self, "Model", self.model_path)[0]
@@ -97,6 +103,7 @@ class MainWindow (QMainWindow):
             for clean_name in self.clean_files:
                 infer_tool.format_wav(clean_name)
                 wav_path = Path(clean_name).with_suffix('.wav')
+                wav_name = Path(clean_name).stem
                 chunks = slicer.cut(wav_path, db_thresh=slice_db)
                 audio_data, audio_sr = slicer.chunks2audio(wav_path, chunks)
 
@@ -115,7 +122,7 @@ class MainWindow (QMainWindow):
                         _audio = out_audio.cpu().numpy()
                     audio.extend(list(_audio))
 
-                res_path = f'./results/{clean_name}_{tran}key_{spk}.{wav_format}'
+                res_path = f'./results/{wav_name}_{trans}key_{self.model_file_name()}.{wav_format}'
                 soundfile.write(res_path, audio, self.svc_model.target_sample, format=wav_format)
         except Exception as e:
             print (e)
