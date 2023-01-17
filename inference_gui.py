@@ -1,4 +1,5 @@
 import io
+import os
 import logging
 import time
 import sys
@@ -26,10 +27,11 @@ class MainWindow (QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.model_path = "models/TS_G_32000.pth"
-        self.config_path = "configs/config.json"
+        self.model_path = "models/placeholder.pth"
+        self.config_path = "configs/placeholder.json"
         self.clean_files = [0]
-        self.svc_model = Svc(self.model_path, self.config_path)
+
+        self.svc_model = []
 
         self.setWindowTitle("so-vits-svc GUI")
         self.central_widget = QFrame()
@@ -69,6 +71,11 @@ class MainWindow (QMainWindow):
         self.layout.addWidget(self.convert_button)
         self.convert_button.clicked.connect(self.convert)
 
+    def try_load_model(self):
+        if os.path.exists(self.model_path) and os.path.exists(self.config_path):
+            self.svc_model = Svc(self.model_path, self.config_path)
+            print ("Loaded model successfully from ",self.model_path)
+
     def model_file_name(self):
         if self.model_path is None:
             return None
@@ -79,14 +86,14 @@ class MainWindow (QMainWindow):
         self.model_path = QFileDialog.getOpenFileName(
             self, "Model", self.model_path)[0]
         self.model_label.setText("Current Model: "+self.model_path)
-        self.svc_model = Svc(self.model_path, self.config_path)
+        self.try_load_model()
         pass
 
     def config_dialog(self):
         self.config_path = QFileDialog.getOpenFileName(
             self, "Config", self.config_path)[0]
         self.config_label.setText("Current Config: "+self.config_path)
-        self.svc_model = Svc(self.model_path, self.config_path)
+        self.try_load_model()
         pass
 
     def file_dialog(self):
