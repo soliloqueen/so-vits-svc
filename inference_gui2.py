@@ -1,3 +1,4 @@
+import traceback
 import io
 import os
 import logging
@@ -8,7 +9,6 @@ from PySide6.QtWidgets import (QApplication, QMainWindow,
                                QFrame, QFileDialog, QLineEdit,
                                QPushButton, QVBoxLayout, QLabel,
                                QComboBox)
-
 import librosa
 import numpy as np
 import soundfile
@@ -99,6 +99,7 @@ class MainWindow (QMainWindow):
         self.convert_button.clicked.connect(self.convert)
 
     def try_load_speaker(self, index):
+        self.speaker = self.speakers[index]
         print ("Loading "+self.speakers[index]["name"])
         self.svc_model = Svc(self.speakers[index]["model_path"],
             self.speakers[index]["cfg_path"])
@@ -113,7 +114,6 @@ class MainWindow (QMainWindow):
     def convert(self):
         try:
             trans = int(self.transpose_num.text())
-            #print(self.clean_files[0])
             for clean_name in self.clean_files:
                 infer_tool.format_wav(clean_name)
                 wav_path = Path(clean_name).with_suffix('.wav')
@@ -132,14 +132,15 @@ class MainWindow (QMainWindow):
                         print('jump empty segment')
                         _audio = np.zeros(length)
                     else:
-                        out_audio, out_sr = self.svc_model.infer(0, trans, raw_path)
+                        out_audio, out_sr = self.svc_model.infer(self.speaker["id"], trans, raw_path)
                         _audio = out_audio.cpu().numpy()
                     audio.extend(list(_audio))
 
-                res_path = f'./results/{wav_name}_{trans}key_{self.model_file_name()}.{wav_format}'
+                model_base = Path(os.path.basename(self.speaker["model_path"])).with_suffix('')
+                res_path = f'./results/{wav_name}_{trans}key_{model_base}.{wav_format}'
                 soundfile.write(res_path, audio, self.svc_model.target_sample, format=wav_format)
         except Exception as e:
-            print (e)
+            traceback.print_exc()
 
 
 app = QApplication(sys.argv)
