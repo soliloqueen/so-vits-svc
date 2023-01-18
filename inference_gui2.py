@@ -6,6 +6,7 @@ import time
 import sys
 import copy
 from pathlib import Path
+import PySide6.QtCore as QtCore
 from PySide6.QtWidgets import (QApplication, QMainWindow,
                                QFrame, QFileDialog, QLineEdit,
                                QPushButton, QVBoxLayout, QLabel,
@@ -48,7 +49,6 @@ def get_speakers():
                     cur_speaker["name"] = name
                     cur_speaker["id"] = i
                     speakers.append(copy.copy(cur_speaker))
-    print(speakers)
     return sorted(speakers, key=lambda x:x["name"].lower())
 logging.getLogger('numba').setLevel(logging.WARNING)
 chunks_dict = infer_tool.read_temp("inference/chunks_temp.json")
@@ -57,7 +57,33 @@ infer_tool.mkdir(["raw", "results"])
 slice_db = -40  
 wav_format = 'flac'
 
+class FileButton(QPushButton):
+    fileDropped = QtCore.Signal(list)
+    def __init__(self):
+        super().__init__("Files to Convert")
+        self.setAcceptDrops(True)
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.accept()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        if event.mimeData().hasUrls():
+            clean_files = []
+            for url in event.mimeData().urls():
+                if not url.toLocalFile():
+                    continue
+                clean_files.append(url.toLocalFile())
+            self.fileDropped.emit(clean_files)
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+        pass
+
 class MainWindow (QMainWindow):
+
     def __init__(self):
         super().__init__()
 
@@ -84,11 +110,12 @@ class MainWindow (QMainWindow):
         self.speaker_box.currentIndexChanged.connect(self.try_load_speaker)
         self.try_load_speaker(0)
 
-        self.file_button = QPushButton("Files to Convert")
+        self.file_button = FileButton()
         self.layout.addWidget(self.file_button)
         self.file_label = QLabel("Files: "+str(self.clean_files))
         self.layout.addWidget(self.file_label)
         self.file_button.clicked.connect(self.file_dialog)
+        self.file_button.fileDropped.connect(self.update_files)
 
         self.transpose_label = QLabel("Transpose")
         self.layout.addWidget(self.transpose_label)
@@ -99,6 +126,10 @@ class MainWindow (QMainWindow):
         self.convert_button = QPushButton("Convert")
         self.layout.addWidget(self.convert_button)
         self.convert_button.clicked.connect(self.convert)
+
+    def update_files(self, files):
+        self.clean_files = files
+        self.file_label.setText("Files: "+str(self.clean_files))
 
     def try_load_speaker(self, index):
         self.speaker = self.speakers[index]
