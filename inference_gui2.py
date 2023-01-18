@@ -4,6 +4,7 @@ import os
 import logging
 import time
 import sys
+import copy
 from pathlib import Path
 from PySide6.QtWidgets import (QApplication, QMainWindow,
                                QFrame, QFileDialog, QLineEdit,
@@ -46,7 +47,8 @@ def get_speakers():
                 for name, i in cfg_json["spk"].items():
                     cur_speaker["name"] = name
                     cur_speaker["id"] = i
-                    speakers.append(cur_speaker)
+                    speakers.append(copy.copy(cur_speaker))
+    print(speakers)
     return sorted(speakers, key=lambda x:x["name"].lower())
 logging.getLogger('numba').setLevel(logging.WARNING)
 chunks_dict = infer_tool.read_temp("inference/chunks_temp.json")
