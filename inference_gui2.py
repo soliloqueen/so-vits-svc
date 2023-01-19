@@ -168,8 +168,8 @@ class MainWindow (QMainWindow):
                         _audio = out_audio.cpu().numpy()
                     audio.extend(list(_audio))
 
-                model_base = Path(os.path.basename(self.speaker["model_path"])).with_suffix('')
-                res_path = f'./results/{wav_name}_{trans}key_{model_base}.{wav_format}'
+                #model_base = Path(os.path.basename(self.speaker["model_path"])).with_suffix('')
+                res_path = f'./results/{wav_name}_{trans}key_{self.speaker["name"]}.{wav_format}'
                 soundfile.write(res_path, audio, self.svc_model.target_sample, format=wav_format)
         except Exception as e:
             traceback.print_exc()
