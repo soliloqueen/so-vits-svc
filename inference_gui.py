@@ -8,7 +8,6 @@ from PySide6.QtWidgets import (QApplication, QMainWindow,
                                QFrame, QFileDialog, QLineEdit,
                                QPushButton, QVBoxLayout, QLabel)
 
-import librosa
 import numpy as np
 import soundfile
 
@@ -74,7 +73,6 @@ class MainWindow (QMainWindow):
     def try_load_model(self):
         if os.path.exists(self.model_path) and os.path.exists(self.config_path):
             self.svc_model = Svc(self.model_path, self.config_path)
-            print ("Loaded model successfully from ",self.model_path)
 
     def model_file_name(self):
         if self.model_path is None:

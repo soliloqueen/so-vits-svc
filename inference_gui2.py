@@ -11,7 +11,6 @@ from PySide6.QtWidgets import (QApplication, QMainWindow,
                                QFrame, QFileDialog, QLineEdit,
                                QPushButton, QVBoxLayout, QLabel,
                                QComboBox)
-import librosa
 import numpy as np
 import soundfile
 import glob
