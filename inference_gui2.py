@@ -25,6 +25,11 @@ from inference import infer_tool
 from inference import slicer
 from inference.infer_tool import Svc
 
+PYTSMOD_AVAILABLE = False
+if importlib.util.find_spec('pytsmod'):
+    PYTSMOD_AVAILABLE = True
+    import pytsmod
+
 MODELS_DIR = "models"
 JSON_NAME = "inference_gui2_persist.json"
 def get_speakers():
@@ -157,12 +162,13 @@ class InferenceGui2 (QMainWindow):
 
         self.transpose_validator = QIntValidator(-24,24)
 
-        # Source timestretching: Not implemented
+        # Source pitchshifting
         self.source_transpose_label = QLabel(
             "Input Transpose (auto-adjusted on output)")
+        self.layout.addWidget(self.source_transpose_label)
         self.source_transpose_num = QLineEdit('0')
+        self.layout.addWidget(self.source_transpose_num)
         self.source_transpose_num.setValidator(self.transpose_validator)
-        # Do not show 
 
         self.transpose_label = QLabel("Transpose")
         self.layout.addWidget(self.transpose_label)
@@ -236,7 +242,7 @@ class InferenceGui2 (QMainWindow):
 
     def convert(self):
         try:
-            # source_trans = int(self.source_transpose_num.text())
+            source_trans = int(self.source_transpose_num.text())
             trans = int(self.transpose_num.text()) + source_trans
             for clean_name in self.clean_files:
                 infer_tool.format_wav(clean_name)
@@ -247,9 +253,15 @@ class InferenceGui2 (QMainWindow):
 
                 audio = []
                 for (slice_tag, data) in audio_data:
-                    # ts_factor = math.pow(2.0, -source_trans/12.0)
+                    beta = math.pow(2.0, source_trans/12.0)
 
                     print(f'#=====segment start, {round(len(data) / audio_sr, 3)}s======')
+                    if PYTSMOD_AVAILABLE and not (source_trans == 0):
+                        print ('performing source transpose...')
+                        # TODO is this the best time stretch algorithm available to us?
+                        data = pytsmod.tdpsola(data, audio_sr, beta)
+                        print ('finished source transpose.')
+
                     length = int(np.ceil(len(data) / audio_sr * self.svc_model.target_sample))
                     raw_path = io.BytesIO()
                     soundfile.write(raw_path, data, audio_sr, format="wav")
