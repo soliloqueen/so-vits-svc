@@ -225,6 +225,21 @@ class Svc(object):
             print("vits use time:{}".format(use_time))
         return audio, audio.shape[-1]
 
+    def infer_with_pitch(self, speaker_id, soft, pitch):
+        sid = torch.LongTensor([int(speaker_id)]).to(self.dev).unsqueeze(0)
+        f0 = torch.FloatTensor(clean_pitch(pitch)).unsqueeze(0).to(self.dev)
+        if "half" in self.net_g_path and torch.cuda.is_available():
+            stn_tst = torch.HalfTensor(soft)
+        else:
+            stn_tst = torch.FloatTensor(soft)
+        with torch.no_grad():
+            x_tst = stn_tst.unsqueeze(0).to(self.dev)
+            start = time.time()
+            x_tst = torch.repeat_interleave(x_tst, repeats=2, dim=1).transpose(1, 2)
+            audio = self.net_g_ms.infer(x_tst, f0=f0, g=sid)[0,0].data.float()
+            use_time = time.time() - start
+            print("vits use time:{}".format(use_time))
+
 
 # class SvcONNXInferModel(object):
 #     def __init__(self, hubert_onnx, vits_onnx, config_path):
