@@ -89,6 +89,7 @@ class MainWindow (QMainWindow):
         self.clean_files = [0]
         self.speakers = get_speakers()
         self.speaker = {}
+        self.output_dir = os.path.abspath("./results/")
 
         self.svc_model = []
 
@@ -122,6 +123,12 @@ class MainWindow (QMainWindow):
         self.layout.addWidget(self.transpose_num)
         self.transpose_num.setInputMask('99')
 
+        self.output_button = QPushButton("Output Directory")
+        self.layout.addWidget(self.output_button)
+        self.output_label = QLabel("Output directory: "+str(self.output_dir))
+        self.layout.addWidget(self.output_label)
+        self.output_button.clicked.connect(self.output_dialog)
+
         self.convert_button = QPushButton("Convert")
         self.layout.addWidget(self.convert_button)
         self.convert_button.clicked.connect(self.convert)
@@ -140,6 +147,11 @@ class MainWindow (QMainWindow):
         self.clean_files = QFileDialog.getOpenFileNames(
             self, "Files to process")[0]
         self.file_label.setText("Files: "+str(self.clean_files))
+
+    def output_dialog(self):
+        self.output_dir = QFileDialog.getExistingDirectory(self,
+            "Output Directory", self.output_dir, QFileDialog.ShowDirsOnly)
+        self.output_label.setText("Output Directory: "+str(self.output_dir))
 
         # int(self.transpose_num.text())
 
@@ -169,7 +181,8 @@ class MainWindow (QMainWindow):
                     audio.extend(list(_audio))
 
                 #model_base = Path(os.path.basename(self.speaker["model_path"])).with_suffix('')
-                res_path = f'./results/{wav_name}_{trans}key_{self.speaker["name"]}.{wav_format}'
+                res_path = os.path.join(self.output_dir,
+                    f'{wav_name}_{trans}key_{self.speaker["name"]}.{wav_format}')
                 soundfile.write(res_path, audio, self.svc_model.target_sample, format=wav_format)
         except Exception as e:
             traceback.print_exc()
