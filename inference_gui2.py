@@ -1,3 +1,4 @@
+import math
 import traceback
 import io
 import os
@@ -5,8 +6,10 @@ import logging
 import time
 import sys
 import copy
+import importlib.util
 from pathlib import Path
 import PySide6.QtCore as QtCore
+from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import (QApplication, QMainWindow,
                                QFrame, QFileDialog, QLineEdit,
                                QPushButton, QVBoxLayout, QLabel,
@@ -148,14 +151,24 @@ class InferenceGui2 (QMainWindow):
         self.recent_label = QLabel("Recent Directories:")
         self.layout.addWidget(self.recent_label)
         self.recent_combo = QComboBox()
+        self.layout.addWidget(self.recent_combo)
         self.update_recent_combo()
         self.recent_combo.currentIndexChanged.connect(self.recent_dir_dialog)
+
+        self.transpose_validator = QIntValidator(-24,24)
+
+        # Source timestretching: Not implemented
+        self.source_transpose_label = QLabel(
+            "Input Transpose (auto-adjusted on output)")
+        self.source_transpose_num = QLineEdit('0')
+        self.source_transpose_num.setValidator(self.transpose_validator)
+        # Do not show 
 
         self.transpose_label = QLabel("Transpose")
         self.layout.addWidget(self.transpose_label)
         self.transpose_num = QLineEdit('0')
         self.layout.addWidget(self.transpose_num)
-        self.transpose_num.setInputMask('99')
+        self.transpose_num.setValidator(self.transpose_validator)
 
         self.output_button = QPushButton("Output Directory")
         self.layout.addWidget(self.output_button)
@@ -223,7 +236,8 @@ class InferenceGui2 (QMainWindow):
 
     def convert(self):
         try:
-            trans = int(self.transpose_num.text())
+            # source_trans = int(self.source_transpose_num.text())
+            trans = int(self.transpose_num.text()) + source_trans
             for clean_name in self.clean_files:
                 infer_tool.format_wav(clean_name)
                 wav_path = Path(clean_name).with_suffix('.wav')
@@ -233,6 +247,8 @@ class InferenceGui2 (QMainWindow):
 
                 audio = []
                 for (slice_tag, data) in audio_data:
+                    # ts_factor = math.pow(2.0, -source_trans/12.0)
+
                     print(f'#=====segment start, {round(len(data) / audio_sr, 3)}s======')
                     length = int(np.ceil(len(data) / audio_sr * self.svc_model.target_sample))
                     raw_path = io.BytesIO()
