@@ -15,6 +15,7 @@ import numpy as np
 import soundfile
 import glob
 import json
+from collections import deque
 from pathlib import Path
 
 from inference import infer_tool
@@ -50,6 +51,25 @@ def get_speakers():
                     cur_speaker["id"] = i
                     speakers.append(copy.copy(cur_speaker))
     return sorted(speakers, key=lambda x:x["name"].lower())
+
+def backtruncate_path(path, n=60):
+    if len(path) < (n):
+        return path
+    path = path.replace('\\','/')
+    spl = path.split('/')
+    pth = spl[-1]
+    i = -1
+
+    while len(pth) < (n - 3):
+        i -= 1
+        if abs(i) > len(spl):
+            break
+        pth = os.path.join(spl[i],pth)
+
+    spl = pth.split(os.path.sep)
+    pth = os.path.join(*spl)
+    return '...'+pth
+
 logging.getLogger('numba').setLevel(logging.WARNING)
 chunks_dict = infer_tool.read_temp("inference/chunks_temp.json")
 
@@ -92,7 +112,12 @@ class InferenceGui2 (QMainWindow):
         self.speaker = {}
         self.output_dir = os.path.abspath("./results/")
         self.cached_file_dir = os.path.abspath(".")
+        self.recent_dirs = collections.deque(maxlen=10)
         self.load_persist()
+
+        # Cull non-existent paths from recent_dirs
+        self.recent_dirs = collections.deque(
+            [d for d in self.recent_dirs if os.path.exists(d)])
 
         self.svc_model = []
 
@@ -120,6 +145,12 @@ class InferenceGui2 (QMainWindow):
         self.file_button.clicked.connect(self.file_dialog)
         self.file_button.fileDropped.connect(self.update_files)
 
+        self.recent_label = QLabel("Recent Directories:")
+        self.layout.addWidget(self.recent_label)
+        self.recent_combo = QComboBox()
+        self.update_recent_combo()
+        self.recent_combo.currentIndexChanged.connect(self.recent_dir_dialog)
+
         self.transpose_label = QLabel("Transpose")
         self.layout.addWidget(self.transpose_label)
         self.transpose_num = QLineEdit('0')
@@ -141,8 +172,9 @@ class InferenceGui2 (QMainWindow):
             pass
         self.clean_files = files
         self.file_label.setText("Files: "+str(self.clean_files))
-        self.cached_file_dir = os.path.abspath(
-            os.path.dirname(self.clean_files[0]))
+        self.recent_dirs.append(
+            os.path.abspath(os.path.dirname(self.clean_files[0])))
+        self.update_recent_combo()
 
     def try_load_speaker(self, index):
         self.speaker = self.speakers[index]
@@ -151,12 +183,23 @@ class InferenceGui2 (QMainWindow):
             self.speakers[index]["cfg_path"])
 
     def file_dialog(self):
-        if not os.path.exists(self.cached_file_dir):
+        if not self.recent_dirs:
             self.update_files(QFileDialog.getOpenFileNames(
                 self, "Files to process")[0])
         else:
             self.update_files(QFileDialog.getOpenFileNames(
-                self, "Files to process", self.cached_file_dir)[0])
+                self, "Files to process", self.recent_dirs[-1])[0])
+
+    def recent_dir_dialog(self, index):
+        if not os.path.exists(self.recent_dirs[index]):
+            print("Path did not exist: ", self.recent_dirs[index])
+        self.update_files(QFileDialog.getOpenFileNames(
+            self, "Files to process", self.recent_dirs[index])[0])
+
+    def update_recent_dirs(self):
+        self.recent_combo.clear()
+        for d in self.recent_dirs:
+            self.recent_combo.addItem(backtruncate_path(d))
 
     def output_dialog(self):
         self.output_dir = QFileDialog.getExistingDirectory(self,
@@ -167,7 +210,7 @@ class InferenceGui2 (QMainWindow):
 
     def save_persist(self):
         with open(JSON_NAME, "w") as f:
-            o = {"cached_file_dir": self.cached_file_dir}
+            o = {"recent_dirs": list(self.recent_dirs)}
             json.dump(o,f)
 
     def load_persist(self):
@@ -175,7 +218,8 @@ class InferenceGui2 (QMainWindow):
             pass
         with open(JSON_NAME, "r") as f:
             o = json.load(f)
-            self.cached_file_dir = o
+            self.recent_dirs = collections.deque(o["recent_dirs"])
+            self.update_recent_combo()
 
     def convert(self):
         try:
