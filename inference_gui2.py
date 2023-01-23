@@ -22,6 +22,7 @@ from inference import slicer
 from inference.infer_tool import Svc
 
 MODELS_DIR = "models"
+JSON_NAME = "inference_gui2_persist.json"
 def get_speakers():
     speakers = []
     for _,dirs,_ in os.walk(MODELS_DIR):
@@ -81,7 +82,7 @@ class FileButton(QPushButton):
             event.ignore()
         pass
 
-class MainWindow (QMainWindow):
+class InferenceGui2 (QMainWindow):
 
     def __init__(self):
         super().__init__()
@@ -90,6 +91,8 @@ class MainWindow (QMainWindow):
         self.speakers = get_speakers()
         self.speaker = {}
         self.output_dir = os.path.abspath("./results/")
+        self.cached_file_dir = os.path.abspath(".")
+        self.load_persist()
 
         self.svc_model = []
 
@@ -134,8 +137,12 @@ class MainWindow (QMainWindow):
         self.convert_button.clicked.connect(self.convert)
 
     def update_files(self, files):
+        if (files is None) or len(files == 0):
+            pass
         self.clean_files = files
         self.file_label.setText("Files: "+str(self.clean_files))
+        self.cached_file_dir = os.path.abspath(
+            os.path.dirname(self.clean_files[0]))
 
     def try_load_speaker(self, index):
         self.speaker = self.speakers[index]
@@ -144,9 +151,12 @@ class MainWindow (QMainWindow):
             self.speakers[index]["cfg_path"])
 
     def file_dialog(self):
-        self.clean_files = QFileDialog.getOpenFileNames(
-            self, "Files to process")[0]
-        self.file_label.setText("Files: "+str(self.clean_files))
+        if not os.path.exists(self.cached_file_dir):
+            self.update_files(QFileDialog.getOpenFileNames(
+                self, "Files to process")[0])
+        else:
+            self.update_files(QFileDialog.getOpenFileNames(
+                self, "Files to process", self.cached_file_dir)[0])
 
     def output_dialog(self):
         self.output_dir = QFileDialog.getExistingDirectory(self,
@@ -154,6 +164,18 @@ class MainWindow (QMainWindow):
         self.output_label.setText("Output Directory: "+str(self.output_dir))
 
         # int(self.transpose_num.text())
+
+    def save_persist(self):
+        with open(JSON_NAME, "w") as f:
+            o = {"cached_file_dir": self.cached_file_dir}
+            json.dump(o,f)
+
+    def load_persist(self):
+        if not os.path.exists(JSON_NAME):
+            pass
+        with open(JSON_NAME, "r") as f:
+            o = json.load(f)
+            self.cached_file_dir = o
 
     def convert(self):
         try:
@@ -189,6 +211,7 @@ class MainWindow (QMainWindow):
 
 
 app = QApplication(sys.argv)
-w = MainWindow()
+w = InferenceGui2()
 w.show()
 app.exec()
+w.save_persist()
