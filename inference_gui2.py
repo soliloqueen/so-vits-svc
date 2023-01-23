@@ -240,10 +240,13 @@ class InferenceGui2 (QMainWindow):
             self.recent_dirs = collections.deque(o["recent_dirs"])
             self.update_recent_combo()
 
+    def push_pitch(self):
+        # TODO
+
     def convert(self):
         try:
             source_trans = int(self.source_transpose_num.text())
-            trans = int(self.transpose_num.text()) + source_trans
+            trans = int(self.transpose_num.text()) - source_trans
             for clean_name in self.clean_files:
                 infer_tool.format_wav(clean_name)
                 wav_path = Path(clean_name).with_suffix('.wav')
@@ -253,10 +256,10 @@ class InferenceGui2 (QMainWindow):
 
                 audio = []
                 for (slice_tag, data) in audio_data:
-                    beta = math.pow(2.0, source_trans/12.0)
 
                     print(f'#=====segment start, {round(len(data) / audio_sr, 3)}s======')
                     if PYTSMOD_AVAILABLE and not (source_trans == 0):
+                        beta = math.pow(2.0, source_trans/12.0)
                         print ('performing source transpose...')
                         # TODO is this the best time stretch algorithm available to us?
                         data = pytsmod.tdpsola(data, audio_sr, beta)
