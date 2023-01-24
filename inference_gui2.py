@@ -235,7 +235,8 @@ class InferenceGui2 (QMainWindow):
 
     def save_persist(self):
         with open(JSON_NAME, "w") as f:
-            o = {"recent_dirs": list(self.recent_dirs)}
+            o = {"recent_dirs": list(self.recent_dirs),
+                 "output_dir": self.output_dir}
             json.dump(o,f)
 
     def load_persist(self):
@@ -244,6 +245,7 @@ class InferenceGui2 (QMainWindow):
         with open(JSON_NAME, "r") as f:
             o = json.load(f)
             self.recent_dirs = deque(o["recent_dirs"])
+            self.output_dir = o["output_dir"]
 
     def push_pitch(self):
         pass
