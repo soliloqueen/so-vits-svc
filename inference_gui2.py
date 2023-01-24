@@ -18,6 +18,7 @@ import numpy as np
 import soundfile
 import glob
 import json
+import torch
 from collections import deque
 from pathlib import Path
 
@@ -25,10 +26,11 @@ from inference import infer_tool
 from inference import slicer
 from inference.infer_tool import Svc
 
-PYTSMOD_AVAILABLE = False
-if importlib.util.find_spec('pytsmod'):
-    PYTSMOD_AVAILABLE = True
-    import pytsmod
+#PSOLA_AVAILABLE = False
+#if importlib.util.find_spec('psola'):
+    #PSOLA_AVAILABLE = True
+    #import psola
+import librosa
 
 MODELS_DIR = "models"
 JSON_NAME = "inference_gui2_persist.json"
@@ -120,11 +122,11 @@ class InferenceGui2 (QMainWindow):
         self.speaker = {}
         self.output_dir = os.path.abspath("./results/")
         self.cached_file_dir = os.path.abspath(".")
-        self.recent_dirs = collections.deque(maxlen=10)
+        self.recent_dirs = deque(maxlen=10)
         self.load_persist()
 
         # Cull non-existent paths from recent_dirs
-        self.recent_dirs = collections.deque(
+        self.recent_dirs = deque(
             [d for d in self.recent_dirs if os.path.exists(d)])
 
         self.svc_model = []
@@ -158,17 +160,18 @@ class InferenceGui2 (QMainWindow):
         self.recent_combo = QComboBox()
         self.layout.addWidget(self.recent_combo)
         self.update_recent_combo()
-        self.recent_combo.currentIndexChanged.connect(self.recent_dir_dialog)
+        self.recent_combo.activated.connect(self.recent_dir_dialog)
 
         self.transpose_validator = QIntValidator(-24,24)
 
         # Source pitchshifting
         self.source_transpose_label = QLabel(
-            "Input Transpose (auto-adjusted on output)")
-        self.layout.addWidget(self.source_transpose_label)
+            "Formant Shift (half-steps) (low-quality)")
         self.source_transpose_num = QLineEdit('0')
-        self.layout.addWidget(self.source_transpose_num)
         self.source_transpose_num.setValidator(self.transpose_validator)
+        #if PSOLA_AVAILABLE:
+        self.layout.addWidget(self.source_transpose_label)
+        self.layout.addWidget(self.source_transpose_num)
 
         self.transpose_label = QLabel("Transpose")
         self.layout.addWidget(self.transpose_label)
@@ -187,12 +190,13 @@ class InferenceGui2 (QMainWindow):
         self.convert_button.clicked.connect(self.convert)
 
     def update_files(self, files):
-        if (files is None) or len(files == 0):
-            pass
+        if (files is None) or (len(files) == 0):
+            return
         self.clean_files = files
         self.file_label.setText("Files: "+str(self.clean_files))
-        self.recent_dirs.append(
-            os.path.abspath(os.path.dirname(self.clean_files[0])))
+        dir_path = os.path.abspath(os.path.dirname(self.clean_files[0]))
+        if not dir_path in self.recent_dirs:
+            self.recent_dirs.append(dir_path)
         self.update_recent_combo()
 
     def try_load_speaker(self, index):
@@ -202,6 +206,7 @@ class InferenceGui2 (QMainWindow):
             self.speakers[index]["cfg_path"])
 
     def file_dialog(self):
+        print("opening file dialog")
         if not self.recent_dirs:
             self.update_files(QFileDialog.getOpenFileNames(
                 self, "Files to process")[0])
@@ -210,12 +215,13 @@ class InferenceGui2 (QMainWindow):
                 self, "Files to process", self.recent_dirs[-1])[0])
 
     def recent_dir_dialog(self, index):
+        print("opening dir dialog")
         if not os.path.exists(self.recent_dirs[index]):
             print("Path did not exist: ", self.recent_dirs[index])
         self.update_files(QFileDialog.getOpenFileNames(
             self, "Files to process", self.recent_dirs[index])[0])
 
-    def update_recent_dirs(self):
+    def update_recent_combo(self):
         self.recent_combo.clear()
         for d in self.recent_dirs:
             self.recent_combo.addItem(backtruncate_path(d))
@@ -234,18 +240,19 @@ class InferenceGui2 (QMainWindow):
 
     def load_persist(self):
         if not os.path.exists(JSON_NAME):
-            pass
+            return
         with open(JSON_NAME, "r") as f:
             o = json.load(f)
-            self.recent_dirs = collections.deque(o["recent_dirs"])
-            self.update_recent_combo()
+            self.recent_dirs = deque(o["recent_dirs"])
 
     def push_pitch(self):
+        pass
         # TODO
 
     def convert(self):
         try:
             source_trans = int(self.source_transpose_num.text())
+            dry_trans = int(self.transpose_num.text())
             trans = int(self.transpose_num.text()) - source_trans
             for clean_name in self.clean_files:
                 infer_tool.format_wav(clean_name)
@@ -258,17 +265,17 @@ class InferenceGui2 (QMainWindow):
                 for (slice_tag, data) in audio_data:
 
                     print(f'#=====segment start, {round(len(data) / audio_sr, 3)}s======')
-                    if PYTSMOD_AVAILABLE and not (source_trans == 0):
-                        beta = math.pow(2.0, source_trans/12.0)
+                    #if PSOLA_AVAILABLE and not (source_trans == 0):
+                    if not (source_trans == 0):
                         print ('performing source transpose...')
-                        # TODO is this the best time stretch algorithm available to us?
-                        data = pytsmod.tdpsola(data, audio_sr, beta)
+                        data = librosa.effects.pitch_shift(data, sr=audio_sr, n_steps=float(source_trans))
                         print ('finished source transpose.')
 
-                    length = int(np.ceil(len(data) / audio_sr * self.svc_model.target_sample))
                     raw_path = io.BytesIO()
                     soundfile.write(raw_path, data, audio_sr, format="wav")
                     raw_path.seek(0)
+
+                    length = int(np.ceil(len(data) / audio_sr * self.svc_model.target_sample))
                     if slice_tag:
                         print('jump empty segment')
                         _audio = np.zeros(length)
@@ -279,7 +286,7 @@ class InferenceGui2 (QMainWindow):
 
                 #model_base = Path(os.path.basename(self.speaker["model_path"])).with_suffix('')
                 res_path = os.path.join(self.output_dir,
-                    f'{wav_name}_{trans}key_{self.speaker["name"]}.{wav_format}')
+                    f'{wav_name}_{source_trans}_{dry_trans}key_{self.speaker["name"]}.{wav_format}')
                 soundfile.write(res_path, audio, self.svc_model.target_sample, format=wav_format)
         except Exception as e:
             traceback.print_exc()
