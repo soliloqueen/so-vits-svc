@@ -9,11 +9,11 @@ import copy
 import importlib.util
 from pathlib import Path
 import PyQt5.QtCore as QtCore
-from PyQt5.QtGui import QIntValidator
+from PyQt5.QtGui import (QIntValidator)
 from PyQt5.QtWidgets import (QApplication, QMainWindow,
                                QFrame, QFileDialog, QLineEdit,
                                QPushButton, QVBoxLayout, QLabel,
-                               QComboBox)
+                               QComboBox, QGroupBox)
 import numpy as np
 import soundfile
 import glob
@@ -123,6 +123,11 @@ class InferenceGui2 (QMainWindow):
         self.output_dir = os.path.abspath("./results/")
         self.cached_file_dir = os.path.abspath(".")
         self.recent_dirs = deque(maxlen=10)
+
+        self.sovits_frame = QGroupBox(self)
+        self.sovits_frame.setTitle("so-vits-svc")
+        self.sovits_lay = QVBoxLayout(self.sovits_frame)
+
         self.load_persist()
 
         # Cull non-existent paths from recent_dirs
@@ -135,6 +140,7 @@ class InferenceGui2 (QMainWindow):
         self.central_widget = QFrame()
         self.layout = QVBoxLayout(self.central_widget)
         self.setCentralWidget(self.central_widget)
+        #self.layout.addWidget(self.sovits_frame)
         
         self.header = QLabel("sof-vits")
         self.layout.addWidget(self.header)
@@ -244,8 +250,8 @@ class InferenceGui2 (QMainWindow):
             return
         with open(JSON_NAME, "r") as f:
             o = json.load(f)
-            self.recent_dirs = deque(o["recent_dirs"])
-            self.output_dir = o["output_dir"]
+            self.recent_dirs = deque(o.get("recent_dirs",[]))
+            self.output_dir = o.get("output_dir",os.path.abspath("./results/"))
 
     def push_pitch(self):
         pass
