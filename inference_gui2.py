@@ -8,9 +8,9 @@ import sys
 import copy
 import importlib.util
 from pathlib import Path
-import PySide6.QtCore as QtCore
-from PySide6.QtGui import QIntValidator
-from PySide6.QtWidgets import (QApplication, QMainWindow,
+import PyQt5.QtCore as QtCore
+from PyQt5.QtGui import QIntValidator
+from PyQt5.QtWidgets import (QApplication, QMainWindow,
                                QFrame, QFileDialog, QLineEdit,
                                QPushButton, QVBoxLayout, QLabel,
                                QComboBox)
@@ -88,7 +88,7 @@ slice_db = -40
 wav_format = 'flac'
 
 class FileButton(QPushButton):
-    fileDropped = QtCore.Signal(list)
+    fileDropped = QtCore.pyqtSignal(list)
     def __init__(self):
         super().__init__("Files to Convert")
         self.setAcceptDrops(True)
