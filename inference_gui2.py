@@ -10,6 +10,7 @@ import importlib.util
 from pathlib import Path
 import PyQt5.QtCore as QtCore
 from PyQt5.QtGui import (QIntValidator)
+from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtWidgets import (QApplication, QMainWindow,
    QFrame, QFileDialog, QLineEdit,
    QPushButton, QHBoxLayout, QVBoxLayout, QLabel,
@@ -90,6 +91,10 @@ chunks_dict = infer_tool.read_temp("inference/chunks_temp.json")
 infer_tool.mkdir(["raw", "results"])
 slice_db = -40  
 wav_format = 'flac'
+
+class AudioPreviewWidget():
+    def __init__(self):
+        pass
 
 class FileButton(QPushButton):
     fileDropped = QtCore.pyqtSignal(list)
@@ -196,6 +201,8 @@ class InferenceGui2 (QMainWindow):
         self.convert_button = QPushButton("Convert")
         self.sovits_lay.addWidget(self.convert_button)
         self.convert_button.clicked.connect(self.sofvits_convert)
+
+        self.sovits_lay.addStretch()
 
         # TalkNet component
         if self.talknet_available:
