@@ -19,7 +19,7 @@ import soundfile
 import glob
 import json
 import torch
-import datetime
+from datetime import datetime
 from collections import deque
 from pathlib import Path
 
@@ -316,6 +316,7 @@ class InferenceGui2 (QMainWindow):
         self.talknet_output_info = QLabel("--output info (empty)--")
         self.talknet_output_info.setWordWrap(True)
         self.talknet_lay.addWidget(self.talknet_gen_button)
+        self.talknet_lay.addWidget(self.talknet_output_info)
 
         self.layout.addWidget(self.talknet_frame)
         print("Loaded TalkNet")
@@ -327,17 +328,20 @@ class InferenceGui2 (QMainWindow):
         # TODO fancy concurrent processing stuff
 
     def talknet_character_load(self, k):
-        self.cur_talknet_char = self.talknet_chars[k]
+        self.cur_talknet_char = k
 
     def talknet_generate_request(self):
         req_time = datetime.now().strftime("%H:%M:%S")
+        print(self.cur_talknet_char)
         response = requests.post('http://'+self.talknet_addr+'/upload',
             data=json.dumps({'char':self.cur_talknet_char,
                 'wav':self.talknet_file,
                 'transcript':self.talknet_transcript_edit.toPlainText(),
-                'results_dir':self.output_dir}))
+                'results_dir':self.output_dir}),
+             headers={'Content-Type':'application/json'})
         if response.status_code != 200:
-            print ("TalkNet generate request failed")
+            print("TalkNet generate request failed.")
+            print("It may be useful to check the TalkNet server output.")
             return
         res = json.loads(response.text)
         if self.talknet_sovits.isChecked():
