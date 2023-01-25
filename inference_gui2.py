@@ -93,8 +93,8 @@ wav_format = 'flac'
 
 class FileButton(QPushButton):
     fileDropped = QtCore.pyqtSignal(list)
-    def __init__(self):
-        super().__init__("Files to Convert")
+    def __init__(self, label = "Files to Convert"):
+        super().__init__(label)
         self.setAcceptDrops(True)
 
     def dragEnterEvent(self, event):
@@ -117,9 +117,9 @@ class FileButton(QPushButton):
         pass
 
 class InferenceGui2 (QMainWindow):
-
     def __init__(self):
         super().__init__()
+
 
         self.clean_files = [0]
         self.speakers = get_speakers()
@@ -142,6 +142,8 @@ class InferenceGui2 (QMainWindow):
         self.layout.addWidget(self.sovits_frame)
 
         self.load_persist()
+        self.talknet_available = self.try_connect_talknet()
+
         # Cull non-existent paths from recent_dirs
         self.recent_dirs = deque(
             [d for d in self.recent_dirs if os.path.exists(d)])
@@ -166,7 +168,6 @@ class InferenceGui2 (QMainWindow):
         self.sovits_lay.addWidget(self.recent_label)
         self.recent_combo = QComboBox()
         self.sovits_lay.addWidget(self.recent_combo)
-        self.update_recent_combo()
         self.recent_combo.activated.connect(self.recent_dir_dialog)
 
         self.transpose_validator = QIntValidator(-24,24)
@@ -194,11 +195,13 @@ class InferenceGui2 (QMainWindow):
 
         self.convert_button = QPushButton("Convert")
         self.sovits_lay.addWidget(self.convert_button)
-        self.convert_button.clicked.connect(self.convert)
+        self.convert_button.clicked.connect(self.sofvits_convert)
 
-        # TalkNet extra component
-        if self.try_connect_talknet():
+        # TalkNet component
+        if self.talknet_available:
             self.try_load_talknet()
+
+        self.update_recent_combo()
 
     def update_files(self, files):
         if (files is None) or (len(files) == 0):
@@ -274,12 +277,23 @@ class InferenceGui2 (QMainWindow):
         else:
             self.cur_talknet_char = "N/A"
 
-        self.talknet_file_button = QPushButton("Provide input audio")
+        self.talknet_file_button = FileButton(label="Provide input audio")
         self.talknet_file = ""
         self.talknet_file_label = QLabel("File: "+self.talknet_file)
         self.talknet_lay.addWidget(self.talknet_file_button)
         self.talknet_lay.addWidget(self.talknet_file_label)
         self.talknet_file_button.clicked.connect(self.talknet_file_dialog)
+        self.talknet_file_button.fileDropped.connect(self.talknet_update_file)
+        
+        self.talknet_recent_label = QLabel("Recent Directories:")
+        self.talknet_lay.addWidget(self.talknet_recent_label)
+        self.talknet_recent_combo = QComboBox()
+        self.talknet_lay.addWidget(self.talknet_recent_combo)
+        self.talknet_recent_combo.activated.connect(self.talknet_recent_dir_dialog)
+
+        self.talknet_transfer_sovits = FileButton(label='Transfer input to so-vits-svc')
+        self.talknet_lay.addWidget(self.talknet_transfer_sovits)
+        self.talknet_transfer_sovits.clicked.connect(self.transfer_to_sovits)
 
         self.talknet_transpose_label = QLabel("Transpose")
         self.talknet_transpose_num = QLineEdit('0')
@@ -292,17 +306,21 @@ class InferenceGui2 (QMainWindow):
         self.talknet_lay.addWidget(self.talknet_transcript_label)
         self.talknet_lay.addWidget(self.talknet_transcript_edit)
 
-        self.talknet_sovits = QCheckBox("Push to so-vits-svc")
+        self.talknet_sovits = QCheckBox("Push TalkNet output to so-vits-svc")
         self.talknet_lay.addWidget(self.talknet_sovits)
 
         self.talknet_gen_button = QPushButton("Generate")
         self.talknet_lay.addWidget(self.talknet_gen_button)
+        self.talknet_gen_button.clicked.connect(self.talknet_generate_request)
 
         self.talknet_output_info = QLabel("--output info (empty)--")
         self.talknet_output_info.setWordWrap(True)
         self.talknet_lay.addWidget(self.talknet_gen_button)
 
         self.layout.addWidget(self.talknet_frame)
+        print("Loaded TalkNet")
+
+        # TODO previews
 
         # TODO optional transcript output?
         # TODO should be able to specify output directory
@@ -323,11 +341,19 @@ class InferenceGui2 (QMainWindow):
             return
         res = json.loads(response.text)
         if self.talknet_sovits.isChecked():
-            res_path = self.convert([res["output_path"]])
+            res_path = self.convert([res["output_path"]], dry_trans=0,
+                source_trans=0) 
+            # Assume no transposition is desired since that is handled
+            # in TalkNet
         self.talknet_output_info.setText("Last successful request: "+req_time+'\n'+
             "ARPAbet: "+res.get("arpabet","N/A")+'\n'+
             "Output path: "+res.get("output_path","N/A")+'\n')
 
+    def transfer_to_sovits(self):
+        if (self.talknet_file is None) or not (os.path.exists(self.talknet_file)):
+            return
+        self.clean_files = [self.talknet_file]
+        self.file_label.setText("Files: "+str(self.clean_files))
 
     def try_load_speaker(self, index):
         self.speaker = self.speakers[index]
@@ -336,12 +362,18 @@ class InferenceGui2 (QMainWindow):
             self.speakers[index]["cfg_path"])
 
     def talknet_file_dialog(self):
-        files = (QFileDialog.getOpenFileName(self, "File to process",
-            options=(QFileDialog.ReadOnly | QFileDialog.ExistingFile))[0])
+        self.talknet_update_file(
+            QFileDialog.getOpenFileName(self, "File to process")[0])
+
+    def talknet_update_file(self, files):
         if (files is None) or (len(files) == 0):
             return
         self.talknet_file = files[0]
         self.talknet_file_label.setText("File: "+str(self.talknet_file))
+        dir_path = os.path.abspath(os.path.dirname(self.talknet_file))
+        if not dir_path in self.recent_dirs:
+            self.recent_dirs.append(dir_path)
+        self.update_recent_combo()
 
     def file_dialog(self):
         # print("opening file dialog")
@@ -359,10 +391,20 @@ class InferenceGui2 (QMainWindow):
         self.update_files(QFileDialog.getOpenFileNames(
             self, "Files to process", self.recent_dirs[index])[0])
 
+    def talknet_recent_dir_dialog(self, index):
+        if not os.path.exists(self.recent_dirs[index]):
+            print("Path did not exist: ", self.recent_dirs[index])
+        self.talknet_update_file(QFileDialog.getOpenFileNames(
+            self, "Files to process", self.recent_dirs[index])[0])
+
     def update_recent_combo(self):
         self.recent_combo.clear()
+        if self.talknet_available:
+            self.talknet_recent_combo.clear()
         for d in self.recent_dirs:
             self.recent_combo.addItem(backtruncate_path(d))
+            if self.talknet_available:
+                self.talknet_recent_combo.addItem(backtruncate_path(d))
 
     def output_dialog(self):
         self.output_dir = QFileDialog.getExistingDirectory(self,
@@ -390,11 +432,18 @@ class InferenceGui2 (QMainWindow):
         pass
         # TODO
 
-    def convert(self, clean_files = []):
-        try:
-            source_trans = int(self.source_transpose_num.text())
+    def sofvits_convert(self):
+        return self.convert(self.clean_files)
+
+    def convert(self, clean_files = [],
+        dry_trans = None,
+        source_trans = None):
+        if not dry_trans:
             dry_trans = int(self.transpose_num.text())
-            trans = int(self.transpose_num.text()) - source_trans
+        if not source_trans:
+            source_trans = int(self.source_transpose_num.text())
+        try:
+            trans = dry_trans - source_trans
             for clean_name in clean_files:
                 infer_tool.format_wav(clean_name)
                 wav_path = Path(clean_name).with_suffix('.wav')
