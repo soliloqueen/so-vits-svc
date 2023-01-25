@@ -142,9 +142,6 @@ class InferenceGui2 (QMainWindow):
         self.layout.addWidget(self.sovits_frame)
 
         self.load_persist()
-        if self.try_connect_talknet():
-            self.try_load_talknet()
-
         # Cull non-existent paths from recent_dirs
         self.recent_dirs = deque(
             [d for d in self.recent_dirs if os.path.exists(d)])
@@ -199,6 +196,10 @@ class InferenceGui2 (QMainWindow):
         self.sovits_lay.addWidget(self.convert_button)
         self.convert_button.clicked.connect(self.convert)
 
+        # TalkNet extra component
+        if self.try_connect_talknet():
+            self.try_load_talknet()
+
     def update_files(self, files):
         if (files is None) or (len(files) == 0):
             return
@@ -251,13 +252,17 @@ class InferenceGui2 (QMainWindow):
         self.talknet_frame.setTitle("talknet")
         self.talknet_frame.setStyleSheet("padding:10px")
         self.talknet_lay = QVBoxLayout(self.talknet_frame)
-        self.layout.addWidget(self.talknet_frame)
 
         self.character_box = QComboBox()
         self.character_label = QLabel("Speaker:")
         response = requests.get('http://'+self.talknet_addr+'/characters')
         if response.status_code == 200:
-            self.talknet_chars = json.loads(response.text)
+            try:
+                self.talknet_chars = json.loads(response.text)
+            except Exception as e:
+                print("Couldn't parse TalkNet response.")
+                print("Are you running the correct TalkNet server?")
+                return
 
         for k in self.talknet_chars.keys():
             self.character_box.addItem(k)
@@ -265,7 +270,7 @@ class InferenceGui2 (QMainWindow):
         self.talknet_lay.addWidget(self.character_box)
         self.character_box.currentTextChanged.connect(self.talknet_character_load)
         if len(self.talknet_chars.keys()):
-            self.cur_talknet_char = self.talknet_chars.keys()[0]
+            self.cur_talknet_char = next(iter(self.talknet_chars.keys()))
         else:
             self.cur_talknet_char = "N/A"
 
@@ -281,17 +286,14 @@ class InferenceGui2 (QMainWindow):
         self.talknet_transpose_num.setValidator(self.transpose_validator)
         self.talknet_lay.addWidget(self.talknet_transpose_label)
         self.talknet_lay.addWidget(self.talknet_transpose_num)
-        # .text()
 
         self.talknet_transcript_label = QLabel("Transcript")
         self.talknet_transcript_edit = QPlainTextEdit()
         self.talknet_lay.addWidget(self.talknet_transcript_label)
         self.talknet_lay.addWidget(self.talknet_transcript_edit)
-        # .toPlainText()
 
         self.talknet_sovits = QCheckBox("Push to so-vits-svc")
         self.talknet_lay.addWidget(self.talknet_sovits)
-        # .isChecked()
 
         self.talknet_gen_button = QPushButton("Generate")
         self.talknet_lay.addWidget(self.talknet_gen_button)
@@ -299,6 +301,8 @@ class InferenceGui2 (QMainWindow):
         self.talknet_output_info = QLabel("--output info (empty)--")
         self.talknet_output_info.setWordWrap(True)
         self.talknet_lay.addWidget(self.talknet_gen_button)
+
+        self.layout.addWidget(self.talknet_frame)
 
         # TODO optional transcript output?
         # TODO should be able to specify output directory
