@@ -452,8 +452,6 @@ class InferenceGui2 (QMainWindow):
         if not REQUESTS_AVAILABLE:
             print("requests library unavailable; not loading talknet options")
             return False
-        if not self.talknet_addr:
-            self.talknet_addr = TALKNET_ADDR
         spl = self.talknet_addr.split(':')
         if (spl is None) or (len(spl) == 1):
             print("Couldn't parse talknet address "+self.talknet_addr)
@@ -693,12 +691,15 @@ class InferenceGui2 (QMainWindow):
 
     def load_persist(self):
         if not os.path.exists(JSON_NAME):
+            self.recent_dirs = []
+            self.output_dirs = "./results/"
+            self.talknet_addr = TALKNET_ADDR
             return
         with open(JSON_NAME, "r") as f:
             o = json.load(f)
             self.recent_dirs = deque(o.get("recent_dirs",[]))
             self.output_dir = o.get("output_dir",os.path.abspath("./results/"))
-            self.talknet_addr = o.get("talknet_addr", TALKNET_ADDR)
+            self.talknet_addr = o.get("talknet_addr",TALKNET_ADDR)
 
     def push_pitch(self):
         pass
@@ -715,9 +716,9 @@ class InferenceGui2 (QMainWindow):
         dry_trans = None,
         source_trans = None):
         res_paths = []
-        if not dry_trans:
+        if dry_trans is None:
             dry_trans = int(self.transpose_num.text())
-        if not source_trans:
+        if source_trans is None:
             source_trans = int(self.source_transpose_num.text())
         try:
             trans = dry_trans - source_trans
