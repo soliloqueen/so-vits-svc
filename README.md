@@ -1,4 +1,9 @@
 # SoftVC VITS Singing Voice Conversion
+## What's up with this?
+* This fork has some modifications to make it work better on Windows and with smaller multi-speaker datasets.
+* There is one gui using PySide6 `inference_gui.py` and one gui using PyQt5 currently a work in progress `inference_gui2.py`
+	* Inference GUI 2 features experimental TalkNet integration, in-program recording, as well as other features like timestretching with rubberband.
+
 ## Updates
 > According to incomplete statistics, it seems that training with multiple speakers may lead to **worsened leaking of voice timbre**. It is not recommended to train models with more than 5 speakers. The current suggestion is to try to train models with only a single speaker if you want to achieve a voice timbre that is more similar to the target.
 > Fixed the issue with unwanted staccato, improving audio quality by a decent amount.\
