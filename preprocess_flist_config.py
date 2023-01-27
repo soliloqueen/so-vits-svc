@@ -87,6 +87,7 @@ if __name__ == "__main__":
         train += wavs[2:-10]
         val += wavs[:2]
         test += wavs[-10:]
+        #test += wavs[-10:]
     n_speakers = len(spk_dict.keys())*2
     shuffle(train)
     shuffle(val)
