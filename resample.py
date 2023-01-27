@@ -15,7 +15,7 @@ def process(item):
     if os.path.exists(wav_path) and '.wav' in wav_path:
         os.makedirs(os.path.join(args.out_dir2, speaker), exist_ok=True)
         wav, sr = librosa.load(wav_path, None)
-        wav, _ = librosa.effects.trim(wav, top_db=20)
+        wav, _ = librosa.effects.trim(wav, top_db=45)
         peak = np.abs(wav).max()
         if peak > 1.0:
             wav = 0.98 * wav / peak
