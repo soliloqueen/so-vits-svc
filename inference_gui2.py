@@ -266,8 +266,11 @@ class AudioRecorder(QGroupBox):
         self.recorder.setAudioInput(self.recorder.audioInputs()[idx])
 
     def record_dir_dialog(self):
-        self.record_dir = QFileDialog.getExistingDirectory(self,
+        temp_record_dir = QFileDialog.getExistingDirectory(self,
             "Recordings Directory", self.record_dir, QFileDialog.ShowDirsOnly)
+        if not os.path.exists(temp_record_dir): 
+            return
+        self.record_dir = temp_record_dir
         self.record_dir_label.setText(
             "Recordings directory: "+str(self.record_dir))
 
@@ -677,8 +680,11 @@ class InferenceGui2 (QMainWindow):
                 self.talknet_recent_combo.addItem(backtruncate_path(d))
 
     def output_dialog(self):
-        self.output_dir = QFileDialog.getExistingDirectory(self,
+        temp_output_dir = QFileDialog.getExistingDirectory(self,
             "Output Directory", self.output_dir, QFileDialog.ShowDirsOnly)
+        if not os.path.exists(output_dir):
+            return
+        self.output_dir = temp_output_dir
         self.output_label.setText("Output Directory: "+str(self.output_dir))
 
         # int(self.transpose_num.text())
