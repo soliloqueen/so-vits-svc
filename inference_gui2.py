@@ -10,7 +10,7 @@ import importlib.util
 from ctypes import cast, POINTER, c_int, c_short, c_float
 from pathlib import Path
 from PyQt5.QtCore import pyqtSignal, Qt, QUrl
-from PyQt5.QtGui import (QIntValidator)
+from PyQt5.QtGui import (QIntValidator, QDoubleValidator)
 from PyQt5.QtMultimedia import (
    QMediaContent, QMediaPlayer, QAudioRecorder,
    QAudioEncoderSettings, QMultimedia, QAudioDeviceInfo,
@@ -26,6 +26,7 @@ import soundfile
 import glob
 import json
 import torch
+import subprocess
 from datetime import datetime
 from collections import deque
 from pathlib import Path
@@ -41,6 +42,15 @@ if importlib.util.find_spec("requests"):
     REQUESTS_AVAILABLE = True
 else:
     REQUESTS_AVAILABLE = False
+
+if (subprocess.run(["where","rubberband"] if os.name == "nt" else 
+    ["which","rubberband"]).returncode == 0) and importlib.util.find_spec("pyrubberband"):
+    print("Rubberband is available!")
+    import pyrubberband as pyrb
+    RUBBERBAND_AVAILABLE = True
+else:
+    print("Rubberband is not available. Timestretch not available.")
+    RUBBERBAND_AVAILABLE = False
 
 TALKNET_ADDR = "127.0.0.1:8050"
 MODELS_DIR = "models"
@@ -175,7 +185,7 @@ class AudioPreviewWidget(QWidget):
     def toggle_play(self):
         if self.player.state() == QMediaPlayer.PlayingState:
             self.player.pause()
-        elif self.player.state() != QMediaPlayer.NoMedia:
+        elif self.player.mediaStatus() != QMediaPlayer.NoMedia:
             self.player.play()
             self.play_button.setIcon(self.style().standardIcon(
                 getattr(QStyle, 'SP_MediaPause')))
@@ -400,7 +410,7 @@ class InferenceGui2 (QMainWindow):
 
         # Source pitchshifting
         self.source_transpose_label = QLabel(
-            "Formant Shift (half-steps) (low-quality)")
+            "Formant Shift (half-steps)")
         self.source_transpose_num = QLineEdit('0')
         self.source_transpose_num.setValidator(self.transpose_validator)
         #if PSOLA_AVAILABLE:
@@ -412,6 +422,15 @@ class InferenceGui2 (QMainWindow):
         self.transpose_num = QLineEdit('0')
         self.sovits_lay.addWidget(self.transpose_num)
         self.transpose_num.setValidator(self.transpose_validator)
+
+        self.timestretch_validator = QDoubleValidator(0.5,1.0,1)
+
+        if RUBBERBAND_AVAILABLE:
+            self.ts_label = QLabel("Timestretch (0.5, 1.0)")
+            self.ts_num = QLineEdit('1.0')
+            self.ts_num.setValidator(self.timestretch_validator)
+            self.sovits_lay.addWidget(self.ts_label)
+            self.sovits_lay.addWidget(self.ts_num)
 
         self.output_button = QPushButton("Change Output Directory")
         self.sovits_lay.addWidget(self.output_button)
@@ -729,22 +748,31 @@ class InferenceGui2 (QMainWindow):
         try:
             trans = dry_trans - source_trans
             for clean_name in clean_files:
+                clean_name = str(clean_name)
+                print(clean_name)
                 infer_tool.format_wav(clean_name)
                 wav_path = Path(clean_name).with_suffix('.wav')
                 wav_name = Path(clean_name).stem
                 chunks = slicer.cut(wav_path, db_thresh=slice_db)
                 audio_data, audio_sr = slicer.chunks2audio(wav_path, chunks)
 
+
                 audio = []
                 for (slice_tag, data) in audio_data:
                     print(f'#=====segment start, '
                         f'{round(len(data)/audio_sr, 3)}s======')
-                    #if PSOLA_AVAILABLE and not (source_trans == 0):
                     if not (source_trans == 0):
                         print ('performing source transpose...')
-                        data = librosa.effects.pitch_shift(
-                            data, sr=audio_sr, n_steps=float(source_trans))
+                        if not RUBBERBAND_AVAILABLE:
+                            data = librosa.effects.pitch_shift(
+                                data, sr=audio_sr, n_steps=float(source_trans))
+                        else:
+                            data = pyrb.pitch_shift(
+                                data, sr=audio_sr, n_steps=float(source_trans))
                         print ('finished source transpose.')
+
+                    if RUBBERBAND_AVAILABLE and (float(self.ts_num.text()) != 1.0):
+                        data = pyrb.time_stretch(data, audio_sr, float(self.ts_num.text()))
 
                     raw_path = io.BytesIO()
                     soundfile.write(raw_path, data, audio_sr, format="wav")
@@ -772,6 +800,10 @@ class InferenceGui2 (QMainWindow):
                         f'{wav_name}_{source_trans}_{dry_trans}key_'
                         f'{self.speaker["name"]}{i}.{wav_format}')
                     i += 1
+
+                # if RUBBERBAND_AVAILABLE and (float(self.ts_num.text()) != 1.0):
+                    # audio = pyrb.time_stretch(np.array(audio),
+                        # audio_sr, 1.0/float(self.ts_num.text()))
                     
                 soundfile.write(res_path, audio, self.svc_model.target_sample,
                     format=wav_format)
