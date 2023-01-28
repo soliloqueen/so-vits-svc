@@ -96,6 +96,7 @@ def run(rank, n_gpus, hps):
                                                    optim_d)
         global_step = (epoch_str - 1) * len(train_loader)
     except:
+        raise Exception("No pretrained model found.")
         epoch_str = 1
         global_step = 0
 
