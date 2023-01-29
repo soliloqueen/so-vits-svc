@@ -3,22 +3,23 @@
 A singing voice coversion (SVC) model, using the SoftVC encoder to extract features from the input audio, sent into VITS along with the F0 to replace the original input to acheive a voice conversion effect. Additionally, changing the vocoder to [NSF HiFiGAN](https://github.com/openvpi/DiffSinger/tree/refactor/modules/nsf_hifigan) to fix the issue with unwanted staccato.
 
 ## Notice
-+ The current branch is the 32kHz version, which requires less vram during inferencing, as well as faster inferencing speeds, and datasets for said branch take up less disk space. Thus the 32 kHz branch is recommended for use.
-+ If you want to train 48 kHz variant models, switch to the [main branch](https://github.com/innnky/so-vits-svc/tree/main).
-## Colab notebook script for dataset creation and training.
-[colab training notebook](https://colab.research.google.com/drive/1rCUOOVG7-XQlVZuWRAj5IpGrMM8t07pE?usp=sharing)
-
-## What's up with this fork?
 * This fork has some modifications to make it work better on Windows and with smaller multi-speaker datasets.
 * There is one gui using PySide6 `inference_gui.py` and one gui using PyQt5 currently a work in progress `inference_gui2.py`
 	* Inference GUI 2 features experimental TalkNet integration, in-program recording, as well as other features like timestretching with rubberband.
 	* Also check out GothicAnon's GUI, written in tkinter. See [here](https://docs.google.com/document/d/1PDkSrKKiHzzpUTKzBldZeKngvjeBUjyTtGCOv2GWwa0/edit#heading=h.l2lv04nvagvx), under So-Vits-SVC for more info.
 
++ The current branch is the 32kHz version, which requires less vram during inferencing, as well as faster inferencing speeds, and datasets for said branch take up less disk space. Thus the 32 kHz branch is recommended for use.
++ If you want to train 48 kHz variant models, switch to the [main branch](https://github.com/innnky/so-vits-svc/tree/main). NOTE: effusiveperiscope does not maintain a 48khz branch.
+## Colab notebook scripts
+[Colab training notebook (EN)](https://colab.research.google.com/drive/1nhrwM204wnvi8x4Yzz4Hb3mN27O42a0O?usp=sharing)
+[Colab training notebook (CN)](https://colab.research.google.com/drive/1rCUOOVG7-XQlVZuWRAj5IpGrMM8t07pE?usp=sharing)
+[Colab inference notebook](https://colab.research.google.com/drive/1igkFWDfNRsOLCLcZ-WXyBmOCSWlJIku0?usp=sharing)
+
 # Inference
-Instructions for CLI inference can be found in the original repository or [here](https://docs.google.com/document/d/1y1pfS0LCrwbbvxdn3ZksH25BKaf0LaO13uYppxIQnac/edit#heading=h.ce7da4l3o6jf). Note that CLI inference is very clunky and generally not recommended for production.
+Instructions for CLI inference can be found in the original repository or [here](https://docs.google.com/document/d/1y1pfS0LCrwbbvxdn3ZksH25BKaf0LaO13uYppxIQnac/edit#heading=h.ce7da4l3o6jf). Note that CLI inference is very clunky and generally not recommended for production. Instructions for inference using various GUIs are available below.
 
 ## Required downloads
-+ Download soft vc hubert model:[hubert-soft-0d54a1f4.pt](https://github.com/bshall/hubert/releases/download/v0.1/hubert-soft-0d54a1f4.pt)
++ Download softVC hubert model:[hubert-soft-0d54a1f4.pt](https://github.com/bshall/hubert/releases/download/v0.1/hubert-soft-0d54a1f4.pt)
   + Place under `hubert`.
 + Download pretrained models [G_0.pth](https://huggingface.co/innnky/sovits_pretrained/resolve/main/G_0.pth) and [D_0.pth](https://huggingface.co/innnky/sovits_pretrained/resolve/main/D_0.pth)
   + Place under `logs/32k`.
