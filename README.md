@@ -5,7 +5,7 @@ A singing voice coversion (SVC) model, using the SoftVC encoder to extract featu
 ## Notice
 * This fork has some modifications to make it work better on Windows and with smaller multi-speaker datasets.
 * There is one gui using PySide6 `inference_gui.py` and one gui using PyQt5 currently a work in progress `inference_gui2.py`
-	* Inference GUI 2 features experimental TalkNet integration, in-program recording, as well as other features like timestretching with rubberband.
+	* Inference GUI 2 features experimental TalkNet integration, in-program recording, as well as other features like timestretching with rubberband. Instructions can be found below under `Inference GUI 2` header.
 	* Also check out GothicAnon's GUI, written in tkinter. See [here](https://docs.google.com/document/d/1PDkSrKKiHzzpUTKzBldZeKngvjeBUjyTtGCOv2GWwa0/edit#heading=h.l2lv04nvagvx), under So-Vits-SVC for more info.
 
 + The current branch is the 32kHz version, which requires less vram during inferencing, as well as faster inferencing speeds, and datasets for said branch take up less disk space. Thus the 32 kHz branch is recommended for use.
