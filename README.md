@@ -42,7 +42,7 @@ wget -P logs/32k/ https://huggingface.co/innnky/sovits_pretrained/resolve/main/D
 
 ## Inference GUI 2
 For Inference GUI 2, you need to `pip install PyQt5`. Additional features may be available based on other dependencies:
-* OPTIONAL - You PROBABLY DO NOT NEED THIS: For timestretching support, you need to install [rubberband](https://breakfastquay.com/rubberband/), ensuring the rubberband executable is on your PATH, and `pip install pyrubberband`.
+* OPTIONAL - You PROBABLY DO NOT NEED THIS: For timestretching support, you need to install [rubberband](https://breakfastquay.com/rubberband/), ensuring the rubberband executable is on your PATH, and `pip install pyrubberband`. __Note that installing pyrubberband installs PySoundFile which needs to be uninstalled, and SoundFile will need to be reinstalled.__
 * OPTIONAL - For TalkNet support, you need to `pip install requests` and also install this [ControllableTalkNet fork](https://github.com/effusiveperiscope/ControllableTalkNet).
 
 ### Basic Usage 
@@ -67,6 +67,9 @@ All basic workflow occurs under the leftmost UI panel.
 4. Click `Convert`. The resulting file should appear under `results`.
 
 The right UI panel allows for recording audio directly into the GUI for quick fixes and tests. Simply select the proper audio device and click `Record` to begin recording. Recordings will automatically be saved to a `recordings` folder. The resulting recording can be transferred to the so-vits-svc panel by pressing `Push last output to so-vits-svc`.
+
+### Common issues
+* When converting: `TypeError: Invalid file: WindowsPath('...')` Ensure that PySoundFile is not installed (`pip show pysoundfile`). PySoundFile is a deprecated version of SoundFile. After uninstalling pysoundfile, run `pip install soundfile==0.10.3.post1 --force-reinstall`
 
 ### Running with TalkNet 
 
