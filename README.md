@@ -11,6 +11,7 @@ For Inference GUI 2, you need to `pip install PyQt5`. Additional features may be
 * For TalkNet support, you need to `pip install requests` and also install this [ControllableTalkNet fork](https://github.com/effusiveperiscope/ControllableTalkNet).
 
 ###Basic Usage
+
 Models should be placed in separate folders within a folder called `models`, in the same directory as `inference_gui2.py` by default. Specifically, the file structure should be:
 ```
 so-vits-svc-eff\
@@ -33,6 +34,7 @@ All basic workflow occurs under the leftmost UI panel.
 The right UI panel allows for recording audio directly into the GUI for quick fixes and tests. Simply select the proper audio device and click `Record` to begin recording. Recordings will automatically be saved to a `recordings` folder. The resulting recording can be transferred to the so-vits-svc panel by pressing `Push last output to so-vits-svc`.
 
 ###Running with TalkNet
+
 For TalkNet support, you need to `pip install requests` and also install this [ControllableTalkNet fork](https://github.com/effusiveperiscope/ControllableTalkNet). Instead of running `talknet_offline.py`, run `alt_server.py` (if you use a batch script or conda environment to run TalkNet, you should use it to run `alt_server.py`). This will start a server that can interface with Inference GUI 2. The TalkNet server should be started before Inference GUI 2.
 
 Next, starting Inference GUI 2 should show a UI like this:
