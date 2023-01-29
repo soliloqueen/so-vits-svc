@@ -7,8 +7,8 @@
 
 ## Inference GUI 2
 For Inference GUI 2, you need to `pip install PyQt5`. Additional features may be available based on other dependencies:
-* For native timestretching support, you need to install [rubberband](https://breakfastquay.com/rubberband/) and `pip install pyrubberband`.
-* For TalkNet support, you need to `pip install requests` and also install this [ControllableTalkNet fork](https://github.com/effusiveperiscope/ControllableTalkNet).
+* OPTIONAL - For timestretching support, you need to install [rubberband](https://breakfastquay.com/rubberband/) and `pip install pyrubberband`.
+* OPTIONAL - For TalkNet support, you need to `pip install requests` and also install this [ControllableTalkNet fork](https://github.com/effusiveperiscope/ControllableTalkNet).
 
 ### Basic Usage 
 
