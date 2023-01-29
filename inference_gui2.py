@@ -84,7 +84,10 @@ def get_speakers():
                     speakers.append(copy.copy(cur_speaker))
     return sorted(speakers, key=lambda x:x["name"].lower())
 
-def backtruncate_path(path, n=60):
+def el_trunc(s, n=80):
+    return s[:min(len(s),n-3)]+'...'
+
+def backtruncate_path(path, n=80):
     if len(path) < (n):
         return path
     path = path.replace('\\','/')
@@ -393,6 +396,7 @@ class InferenceGui2 (QMainWindow):
         self.file_button = FileButton()
         self.sovits_lay.addWidget(self.file_button)
         self.file_label = QLabel("Files: "+str(self.clean_files))
+        self.file_label.setWordWrap(True)
         self.sovits_lay.addWidget(self.file_label)
         self.file_button.clicked.connect(self.file_dialog)
         self.file_button.fileDropped.connect(self.update_files)
