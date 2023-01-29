@@ -68,16 +68,16 @@ def get_speakers():
                 continue
             cur_speaker["model_path"] = g[0]
             # Look for config.json
-            cfg = glob.glob(os.path.join(MODELS_DIR,folder,'config.json'))
+            cfg = glob.glob(os.path.join(MODELS_DIR,folder,'*.json'))
             if not len(cfg):
-                print("Skipping "+folder+", no config.json")
+                print("Skipping "+folder+", no config json")
                 continue
             cur_speaker["cfg_path"] = cfg[0]
             with open(cur_speaker["cfg_path"]) as f:
                 try:
                     cfg_json = json.loads(f.read())
                 except Exception as e:
-                    print("Malformed config.json in "+folder)
+                    print("Malformed config json in "+folder)
                 for name, i in cfg_json["spk"].items():
                     cur_speaker["name"] = name
                     cur_speaker["id"] = i
@@ -755,7 +755,7 @@ class InferenceGui2 (QMainWindow):
                 clean_name = str(clean_name)
                 print(clean_name)
                 infer_tool.format_wav(clean_name)
-                wav_path = Path(clean_name).with_suffix('.wav')
+                wav_path = str(Path(clean_name).with_suffix('.wav'))
                 wav_name = Path(clean_name).stem
                 chunks = slicer.cut(wav_path, db_thresh=slice_db)
                 audio_data, audio_sr = slicer.chunks2audio(wav_path, chunks)
