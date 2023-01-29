@@ -12,7 +12,9 @@ A singing voice coversion (SVC) model, using the SoftVC encoder to extract featu
 + If you want to train 48 kHz variant models, switch to the [main branch](https://github.com/innnky/so-vits-svc/tree/main). NOTE: effusiveperiscope does not maintain a 48khz branch.
 ## Colab notebook scripts
 [Colab training notebook (EN)](https://colab.research.google.com/drive/1nhrwM204wnvi8x4Yzz4Hb3mN27O42a0O?usp=sharing)
+
 [Colab training notebook (CN)](https://colab.research.google.com/drive/1rCUOOVG7-XQlVZuWRAj5IpGrMM8t07pE?usp=sharing)
+
 [Colab inference notebook](https://colab.research.google.com/drive/1igkFWDfNRsOLCLcZ-WXyBmOCSWlJIku0?usp=sharing)
 
 # Inference
