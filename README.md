@@ -3,6 +3,46 @@
 * This fork has some modifications to make it work better on Windows and with smaller multi-speaker datasets.
 * There is one gui using PySide6 `inference_gui.py` and one gui using PyQt5 currently a work in progress `inference_gui2.py`
 	* Inference GUI 2 features experimental TalkNet integration, in-program recording, as well as other features like timestretching with rubberband.
+	* Also check out GothicAnon's GUI, written in tkinter. See [here](https://docs.google.com/document/d/1PDkSrKKiHzzpUTKzBldZeKngvjeBUjyTtGCOv2GWwa0/edit#heading=h.l2lv04nvagvx), under So-Vits-SVC for more info.
+
+## Inference GUI 2
+For Inference GUI 2, you need to `pip install PyQt5`. Additional features may be available based on other dependencies:
+* For native timestretching support, you need to install [rubberband](https://breakfastquay.com/rubberband/) and `pip install pyrubberband`.
+* For TalkNet support, you need to `pip install requests` and also install this [ControllableTalkNet fork](https://github.com/effusiveperiscope/ControllableTalkNet).
+
+###Basic Usage
+Models should be placed in separate folders within a folder called `models`, in the same directory as `inference_gui2.py` by default. Specifically, the file structure should be:
+```
+so-vits-svc-eff\
+	models\
+		TwilightSparkle
+			G_*****.pth
+			D_*****.pth
+			config.json
+```
+If the proper libraries are installed, the GUI can be run simply by running `inference_gui2.py`. If everything goes well you should see something like this:
+![](https://raw.githubusercontent.com/effusiveperiscope/so-vits-svc/eff/docs/gui.png)
+
+All basic workflow occurs under the leftmost UI panel.
+
+1. Select a speaker based on the listed names under `Speaker:`.
+2. Drag and drop reference audio files to be converted onto `Files to Convert`. Alternatively, click on `Files to Convert` to open a file dialog.
+3. Set desired transpose (for m2f vocal conversion this is usually 12, or leave it 0 if the reference audio is female) under `Transpose`.
+4. Click `Convert`. The resulting file should appear under `results`.
+
+The right UI panel allows for recording audio directly into the GUI for quick fixes and tests. Simply select the proper audio device and click `Record` to begin recording. Recordings will automatically be saved to a `recordings` folder. The resulting recording can be transferred to the so-vits-svc panel by pressing `Push last output to so-vits-svc`.
+
+###Running with TalkNet
+For TalkNet support, you need to `pip install requests` and also install this [ControllableTalkNet fork](https://github.com/effusiveperiscope/ControllableTalkNet). Instead of running `talknet_offline.py`, run `alt_server.py` (if you use a batch script or conda environment to run TalkNet, you should use it to run `alt_server.py`). This will start a server that can interface with Inference GUI 2. The TalkNet server should be started before Inference GUI 2.
+
+Next, starting Inference GUI 2 should show a UI like this:
+![](https://raw.githubusercontent.com/effusiveperiscope/so-vits-svc/eff/docs/gui2.png)
+
+The rightmost panel shows controls for TalkNet which are similar to those used in the web interface. Some items special to this interface:
+* There is currently no "Custom model" option. To add additional models you should modify the model jsons in Controllable TalkNet.
+* Recordings can be also be transferred from the recording panel to the TalkNet panel.
+* Files can be provided under `Provide input audio` through clicking for a file dialog or drag-and-drop.
+* In order to push output from TalkNet through so-vits-svc, check `Push TalkNet output to so-vits-svc`. For production work it is advised to first try one generation without this box checked to see if there are artifacts in the TalkNet output. The output will use the speaker selected in the leftmost panel.
 
 ## Updates
 > According to incomplete statistics, it seems that training with multiple speakers may lead to **worsened leaking of voice timbre**. It is not recommended to train models with more than 5 speakers. The current suggestion is to try to train models with only a single speaker if you want to achieve a voice timbre that is more similar to the target.
