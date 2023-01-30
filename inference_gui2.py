@@ -520,6 +520,7 @@ class InferenceGui2 (QMainWindow):
             try:
                 self.talknet_chars = json.loads(response.text)
             except Exception as e:
+                self.talknet_available = False
                 print("Couldn't parse TalkNet response.")
                 print("Are you running the correct TalkNet server?")
                 return
