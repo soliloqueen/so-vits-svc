@@ -17,8 +17,8 @@ from torch.cuda.amp import autocast, GradScaler
 
 import commons
 import utils
-#from data_utils import TextAudioSpeakerLoader, EvalDataLoader
-from data_utils2 import TextAudioSpeakerLoader, EvalDataLoader
+from data_utils import TextAudioSpeakerLoader, EvalDataLoader
+#from data_utils2 import TextAudioSpeakerLoader, EvalDataLoader
 from models import (
     SynthesizerTrn,
     MultiPeriodDiscriminator,
