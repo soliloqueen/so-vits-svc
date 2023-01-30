@@ -4,6 +4,7 @@ A singing voice coversion (SVC) model, using the SoftVC encoder to extract featu
 
 ## Notice
 * This fork has some modifications to make it work better on Windows and with smaller multi-speaker datasets.
+* Some modifications have also been made to pitch inference for better performance.
 * There is one gui using PySide6 `inference_gui.py` and one gui using PyQt5 currently a work in progress `inference_gui2.py`
 	* Inference GUI 2 features experimental TalkNet integration, in-program recording, as well as other features like timestretching with rubberband. Instructions can be found below under `Inference GUI 2` header.
 	* Also check out GothicAnon's GUI, written in tkinter. See [here](https://docs.google.com/document/d/1PDkSrKKiHzzpUTKzBldZeKngvjeBUjyTtGCOv2GWwa0/edit#heading=h.l2lv04nvagvx), under So-Vits-SVC for more info.
@@ -42,7 +43,7 @@ wget -P logs/32k/ https://huggingface.co/innnky/sovits_pretrained/resolve/main/D
 
 ## Inference GUI 2
 For Inference GUI 2, you need to `pip install PyQt5`. Additional features may be available based on other dependencies:
-* OPTIONAL - You PROBABLY DO NOT NEED THIS: For timestretching support, you need to install [rubberband](https://breakfastquay.com/rubberband/), ensuring the rubberband executable is on your PATH, and `pip install pyrubberband`. __Note that installing pyrubberband installs PySoundFile which needs to be uninstalled, and SoundFile will need to be reinstalled.__
+* OPTIONAL - You PROBABLY DO NOT NEED THIS: For timestretching support, you need to install BOTH [the rubberband standalone program](https://breakfastquay.com/rubberband/), ensuring the rubberband executable is on your PATH, and the python module `pip install pyrubberband`. __Note that installing pyrubberband installs PySoundFile which needs to be uninstalled, and SoundFile will need to be reinstalled.__
 * OPTIONAL - For TalkNet support, you need to `pip install requests` and also install this [ControllableTalkNet fork](https://github.com/effusiveperiscope/ControllableTalkNet).
 
 ### Basic Usage 
@@ -63,13 +64,14 @@ All basic workflow occurs under the leftmost UI panel.
 
 1. Select a speaker based on the listed names under `Speaker:`.
 2. Drag and drop reference audio files to be converted onto `Files to Convert`. Alternatively, click on `Files to Convert` to open a file dialog.
-3. Set desired transpose (for m2f vocal conversion this is usually 12, or leave it 0 if the reference audio is female) under `Transpose`.
+3. Set desired transpose (for m2f vocal conversion this is usually 12 i.e. an octave, or leave it 0 if the reference audio is female) under `Transpose`.
 4. Click `Convert`. The resulting file should appear under `results`.
 
 The right UI panel allows for recording audio directly into the GUI for quick fixes and tests. Simply select the proper audio device and click `Record` to begin recording. Recordings will automatically be saved to a `recordings` folder. The resulting recording can be transferred to the so-vits-svc panel by pressing `Push last output to so-vits-svc`.
 
 ### Common issues
 * When converting: `TypeError: Invalid file: WindowsPath('...')` Ensure that PySoundFile is not installed (`pip show pysoundfile`). PySoundFile is a deprecated version of SoundFile. After uninstalling pysoundfile, run `pip install soundfile==0.10.3.post1 --force-reinstall`
+* When trying to run with TalkNet: `Couldn't parse TalkNet response.` Ensure that you are running `alt_server.py` in the TalkNet fork.
 
 ### Running with TalkNet 
 
