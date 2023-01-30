@@ -81,7 +81,8 @@ def get_speakers():
                 for name, i in cfg_json["spk"].items():
                     cur_speaker["name"] = name
                     cur_speaker["id"] = i
-                    speakers.append(copy.copy(cur_speaker))
+                    if not name.startswith('.'):
+                        speakers.append(copy.copy(cur_speaker))
     return sorted(speakers, key=lambda x:x["name"].lower())
 
 def el_trunc(s, n=80):
