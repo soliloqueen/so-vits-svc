@@ -430,6 +430,10 @@ class InferenceGui2 (QMainWindow):
 
         self.timestretch_validator = QDoubleValidator(0.5,1.0,1)
 
+        self.f0_switch = QCheckBox("Use old f0 detection for inference")
+        self.sovits_lay.addWidget(self.f0_switch)
+        self.f0_switch.stateChanged.connect(self.update_f0_switch)
+
         if RUBBERBAND_AVAILABLE:
             self.ts_label = QLabel("Timestretch (0.5, 1.0)")
             self.ts_num = QLineEdit('1.0')
@@ -461,6 +465,9 @@ class InferenceGui2 (QMainWindow):
             self.try_load_talknet()
 
         self.update_recent_combo()
+
+    def update_f0_switch(self):
+        self.svc_model.use_old_f0 = self.f0_switch.isChecked()
 
     def update_files(self, files):
         if (files is None) or (len(files) == 0):

@@ -89,7 +89,32 @@ def resize2d_f0(x, target_len):
     res = np.nan_to_num(target)
     return res
 
-def get_f0(x, p_len,f0_up_key=0):
+def get_f0_old(x, p_len,f0_up_key=0):
+
+    time_step = 160 / 16000 * 1000
+    f0_min = 50
+    f0_max = 1100
+    f0_mel_min = 1127 * np.log(1 + f0_min / 700)
+    f0_mel_max = 1127 * np.log(1 + f0_max / 700)
+
+    f0 = parselmouth.Sound(x, 16000).to_pitch_ac(
+        time_step=time_step / 1000, voicing_threshold=0.6,
+        pitch_floor=f0_min, pitch_ceiling=f0_max).selected_array['frequency']
+    if len(f0) > p_len:
+        f0 = f0[:p_len]
+    pad_size=(p_len - len(f0) + 1) // 2
+    if(pad_size>0 or p_len - len(f0) - pad_size>0):
+        f0 = np.pad(f0,[[pad_size,p_len - len(f0) - pad_size]], mode='constant')
+
+    f0 *= pow(2, f0_up_key / 12)
+    f0_mel = 1127 * np.log(1 + f0 / 700)
+    f0_mel[f0_mel > 0] = (f0_mel[f0_mel > 0] - f0_mel_min) * 254 / (f0_mel_max - f0_mel_min) + 1
+    f0_mel[f0_mel <= 1] = 1
+    f0_mel[f0_mel > 255] = 255
+    f0_coarse = np.rint(f0_mel).astype(np.int)
+    return f0_coarse, f0
+
+def get_f0_new(x, p_len,f0_up_key=0):
 
     time_step = 160 / 16000 * 1000
     f0_min = 75
@@ -156,6 +181,7 @@ class Svc(object):
         self.target_sample = self.hps_ms.data.sampling_rate
         self.hop_size = self.hps_ms.data.hop_length
         self.speakers = {}
+        self.use_old_f0 = False
         for spk, sid in self.hps_ms.spk.items():
             self.speakers[sid] = spk
         self.spk2id = self.hps_ms.spk
@@ -204,7 +230,12 @@ class Svc(object):
         if len(source.shape) == 2 and source.shape[1] >= 2:
             source = torch.mean(source, dim=0).unsqueeze(0)
         soft = self.get_units(source, sr).squeeze(0).cpu().numpy()
-        f0_coarse, f0 = get_f0(source.cpu().numpy()[0], soft.shape[0]*2, tran)
+        if self.use_old_f0:
+            f0_coarse, f0 = get_f0_old(source.cpu().numpy()[0],
+                soft.shape[0]*2, tran)
+        else:
+            f0_coarse, f0 = get_f0_new(source.cpu().numpy()[0],
+                soft.shape[0]*2, tran)
         return soft, f0
 
     def infer(self, speaker_id, tran, raw_path):
