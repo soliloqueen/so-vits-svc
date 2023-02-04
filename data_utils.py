@@ -55,7 +55,6 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
             spec = torch.squeeze(spec, 0)
             torch.save(spec, spec_filename)
 
-<<<<<<< HEAD
         spk = filename.replace('\\','/').split('/')[-2]
         spk = torch.LongTensor([self.spk_map[spk]])
 
