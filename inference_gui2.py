@@ -10,7 +10,7 @@ import importlib.util
 from ctypes import cast, POINTER, c_int, c_short, c_float
 from pathlib import Path
 from PyQt5.QtCore import pyqtSignal, Qt, QUrl
-from PyQt5.QtGui import (QIntValidator, QDoubleValidator)
+from PyQt5.QtGui import (QIntValidator, QDoubleValidator, QKeySequence)
 from PyQt5.QtMultimedia import (
    QMediaContent, QMediaPlayer, QAudioRecorder,
    QAudioEncoderSettings, QMultimedia, QAudioDeviceInfo,
@@ -20,7 +20,7 @@ from PyQt5.QtWidgets import (QWidget,
    QApplication, QMainWindow,
    QFrame, QFileDialog, QLineEdit, QSlider,
    QPushButton, QHBoxLayout, QVBoxLayout, QLabel,
-   QPlainTextEdit, QComboBox, QGroupBox, QCheckBox)
+   QPlainTextEdit, QComboBox, QGroupBox, QCheckBox, QShortcut)
 import numpy as np
 import soundfile
 import glob
@@ -30,6 +30,7 @@ import subprocess
 from datetime import datetime
 from collections import deque
 from pathlib import Path
+from pygame import mixer, _sdl2 as devicer
 
 from inference import infer_tool
 from inference import slicer
@@ -56,6 +57,7 @@ TALKNET_ADDR = "127.0.0.1:8050"
 MODELS_DIR = "models"
 RECORD_DIR = "./recordings"
 JSON_NAME = "inference_gui2_persist.json"
+    
 def get_speakers():
     speakers = []
     for _,dirs,_ in os.walk(MODELS_DIR):
@@ -224,6 +226,8 @@ class AudioRecorder(QGroupBox):
         self.record_button = QPushButton("Record")
         self.record_button.clicked.connect(self.toggle_record)
         self.layout.addWidget(self.record_button)
+        self.shortcut = QShortcut(QKeySequence("r"), self)
+        self.shortcut.activated.connect(self.toggle_record)
 
         self.probe = QAudioProbe()
         self.probe.setSource(self.recorder)
@@ -256,11 +260,18 @@ class AudioRecorder(QGroupBox):
         self.layout.addWidget(self.sovits_button)
         self.sovits_button.clicked.connect(self.push_to_sovits)
 
+        self.automatic_checkbox = QCheckBox("Send automatically")
+        self.layout.addWidget(self.automatic_checkbox)
+
+        self.mic_checkbox = QCheckBox("Output to VB-Audio Virtual Cable")
+        self.layout.addWidget(self.mic_checkbox)
+        self.mic_checkbox.stateChanged.connect(self.update_init_audio)
+        
         if (par.talknet_available):
             self.talknet_button = QPushButton("Push last output to TalkNet")
             self.layout.addWidget(self.talknet_button)
             self.talknet_button.clicked.connect(self.push_to_talknet)
-
+        
         self.layout.addStretch()
 
     def update_volume(self, buf):
@@ -276,6 +287,13 @@ class AudioRecorder(QGroupBox):
 
         self.volume_meter.setValue(int(level * 100))
 
+    def update_init_audio(self):
+        mixer.init(devicename = 'CABLE Input (VB-Audio Virtual Cable)')
+        if self.mic_checkbox.isChecked():
+            self.ui_parent.mic_state = True
+        else:
+            self.ui_parent.mic_state = False
+
     def set_input_dev(self, idx):
         self.recorder.setAudioInput(self.recorder.audioInputs()[idx])
 
@@ -287,7 +305,7 @@ class AudioRecorder(QGroupBox):
         self.record_dir = temp_record_dir
         self.record_dir_label.setText(
             "Recordings directory: "+str(self.record_dir))
-
+        
     def toggle_record(self):
         if self.recorder.status() == QAudioRecorder.RecordingStatus:
             self.recorder.stop()
@@ -297,6 +315,10 @@ class AudioRecorder(QGroupBox):
                 self.recorder.outputLocation().toLocalFile())
             self.preview.set_text("Preview - "+os.path.basename(
                 self.recorder.outputLocation().toLocalFile()))
+            if self.automatic_checkbox.isChecked():
+                self.push_to_sovits()
+                self.ui_parent.sofvits_convert()
+                
         else:
             self.record()
             self.record_button.setText("Recording to "+str(
@@ -357,7 +379,7 @@ class InferenceGui2 (QMainWindow):
     def __init__(self):
         super().__init__()
 
-
+        self.mic_state = False
         self.clean_files = [0]
         self.speakers = get_speakers()
         self.speaker = {}
@@ -465,7 +487,7 @@ class InferenceGui2 (QMainWindow):
             self.try_load_talknet()
 
         self.update_recent_combo()
-
+        
     def update_f0_switch(self):
         self.svc_model.use_old_f0 = self.f0_switch.isChecked()
 
@@ -821,10 +843,15 @@ class InferenceGui2 (QMainWindow):
                 soundfile.write(res_path, audio, self.svc_model.target_sample,
                     format=wav_format)
                 res_paths.append(res_path)
+                if self.mic_state:
+                    if mixer.music.get_busy():
+                        mixer.music.queue(res_paths[0])
+                    else:
+                        mixer.music.load(res_paths[0])
+                        mixer.music.play()
         except Exception as e:
             traceback.print_exc()
         return res_paths
-
 
 app = QApplication(sys.argv)
 w = InferenceGui2()
