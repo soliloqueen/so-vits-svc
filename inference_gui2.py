@@ -30,13 +30,21 @@ import subprocess
 from datetime import datetime
 from collections import deque
 from pathlib import Path
-from pygame import mixer, _sdl2 as devicer
 
 from inference import infer_tool
 from inference import slicer
 from inference.infer_tool import Svc
 
 import librosa
+
+if importlib.util.find_spec("pygame"):
+    from pygame import mixer, _sdl2 as devicer
+    print("Pygame is available.")
+    print("Realtime recording enabled. Press r to record.")
+    PYGAME_AVAILABLE = True
+else:
+    print("Pygame is not available.")
+    PYGAME_AVAILABLE = False
 
 if importlib.util.find_spec("requests"):
     import requests
@@ -265,6 +273,7 @@ class AudioRecorder(QGroupBox):
         self.record_button = QPushButton("Record")
         self.record_button.clicked.connect(self.toggle_record)
         self.layout.addWidget(self.record_button)
+
         self.shortcut = QShortcut(QKeySequence("r"), self)
         self.shortcut.activated.connect(self.toggle_record)
 
@@ -302,9 +311,10 @@ class AudioRecorder(QGroupBox):
         self.automatic_checkbox = QCheckBox("Send automatically")
         self.layout.addWidget(self.automatic_checkbox)
 
-        self.mic_checkbox = QCheckBox("Output to VB-Audio Virtual Cable")
-        self.layout.addWidget(self.mic_checkbox)
-        self.mic_checkbox.stateChanged.connect(self.update_init_audio)
+        if PYGAME_AVAILABLE:
+            self.mic_checkbox = QCheckBox("Output to VB-Audio Virtual Cable")
+            self.layout.addWidget(self.mic_checkbox)
+            self.mic_checkbox.stateChanged.connect(self.update_init_audio)
         
         if (par.talknet_available):
             self.talknet_button = QPushButton("Push last output to TalkNet")
@@ -327,11 +337,12 @@ class AudioRecorder(QGroupBox):
         self.volume_meter.setValue(int(level * 100))
 
     def update_init_audio(self):
-        mixer.init(devicename = 'CABLE Input (VB-Audio Virtual Cable)')
-        if self.mic_checkbox.isChecked():
-            self.ui_parent.mic_state = True
-        else:
-            self.ui_parent.mic_state = False
+        if PYGAME_AVAILABLE:
+            mixer.init(devicename = 'CABLE Input (VB-Audio Virtual Cable)')
+            if self.mic_checkbox.isChecked():
+                self.ui_parent.mic_state = True
+            else:
+                self.ui_parent.mic_state = False
 
     def set_input_dev(self, idx):
         self.recorder.setAudioInput(self.recorder.audioInputs()[idx])
@@ -882,7 +893,7 @@ class InferenceGui2 (QMainWindow):
                 soundfile.write(res_path, audio, self.svc_model.target_sample,
                     format=wav_format)
                 res_paths.append(res_path)
-                if self.mic_state:
+                if PYGAME_AVAILABLE and self.mic_state:
                     if mixer.music.get_busy():
                         mixer.music.queue(res_paths[0])
                     else:
