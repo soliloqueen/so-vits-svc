@@ -43,6 +43,12 @@ if importlib.util.find_spec("requests"):
 else:
     REQUESTS_AVAILABLE = False
 
+if importlib.util.find_spec("pedalboard"):
+    import pedalboard
+    PEDALBOARD_AVAILABLE = True
+else:
+    PEDALBOARD_AVAILABLE = False
+
 if (subprocess.run(["where","rubberband"] if os.name == "nt" else 
     ["which","rubberband"]).returncode == 0) and importlib.util.find_spec("pyrubberband"):
     print("Rubberband is available!")
@@ -112,6 +118,39 @@ chunks_dict = infer_tool.read_temp("inference/chunks_temp.json")
 infer_tool.mkdir(["raw", "results"])
 slice_db = -40  
 wav_format = 'wav'
+
+class VSTWidget(QWidget):
+    def __init__(self):
+        # this should not even be loaded if pedalboard is not available
+        assert PEDALBOARD_AVAILABLE 
+        super().__init__()
+        self.layout = QHBoxLayout(self)
+        self.select_button = QPushButton("No VST loaded")
+        self.select_button.setSizePolicy(QSizePolicy.Expanding,
+            QSizePolicy.Preferred)
+        self.select_button.clicked.connect(self.select_plugin)
+        self.editor_button = QPushButton("Open UI")
+        self.editor_button.clicked.connect(self.open_editor)
+        self.layout.addWidget(self.select_button)
+        self.bypass_button = QCheckBox("Bypass")
+        self.layout.addWidget(self.bypass_button)
+        self.plugin_container = None
+
+    def select_plugin(self):
+        files = QFileDialog.getOpenFileName(self, "Plugin to load")
+        if not len(files):
+            return
+        self.plugin_container = pedalboard.VST3Plugin(files[0])
+
+    def open_editor(self):
+        self.plugin_container.show_editor()
+
+    def process(self, array, sr):
+        if self.plugin_container is None:
+            return
+        if self.bypass_button.isChecked():
+            return array
+        return self.plugin_container.process(input_array = array, sample_rate = sr)
 
 class AudioPreviewWidget(QWidget):
     def __init__(self):
