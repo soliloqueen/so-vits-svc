@@ -22,3 +22,4 @@ torch==1.10.0+cu113
 torchaudio==0.10.0+cu113
 torchvision==0.11.1
 tqdm==4.63.0
+pygame==2.1.2
