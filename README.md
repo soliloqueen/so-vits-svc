@@ -21,6 +21,9 @@ A singing voice coversion (SVC) model, using the SoftVC encoder to extract featu
 # Inference
 Instructions for CLI inference can be found in the original repository or [here](https://docs.google.com/document/d/1y1pfS0LCrwbbvxdn3ZksH25BKaf0LaO13uYppxIQnac/edit#heading=h.ce7da4l3o6jf). Note that CLI inference is very clunky and generally not recommended for production. Instructions for inference using various GUIs are available below.
 
+## Docker
+An anon has provided docker files with instructions [here.](https://files.catbox.moe/6ct61q.zip)
+
 ## Required downloads
 + Download softVC hubert model:[hubert-soft-0d54a1f4.pt](https://github.com/bshall/hubert/releases/download/v0.1/hubert-soft-0d54a1f4.pt)
   + Place under `hubert`.
