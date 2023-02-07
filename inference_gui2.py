@@ -12,7 +12,7 @@ from pathlib import Path
 from PyQt5.QtCore import pyqtSignal, Qt, QUrl
 from PyQt5.QtGui import (QIntValidator, QDoubleValidator, QKeySequence)
 from PyQt5.QtMultimedia import (
-   QMediaContent, QMediaPlayer, QAudioRecorder,
+   QMediaContent, QAudio, QAudioDeviceInfo, QMediaPlayer, QAudioRecorder,
    QAudioEncoderSettings, QMultimedia, QAudioDeviceInfo,
    QAudioProbe, QAudioFormat)
 from PyQt5.QtWidgets import (QWidget,
@@ -286,6 +286,19 @@ class AudioRecorder(QGroupBox):
         self.volume_meter.setValue(0)
         self.layout.addWidget(self.volume_meter)
 
+        if PYGAME_AVAILABLE:
+            self.record_out_label = QLabel("Output device")
+            self.out_devs = QAudioDeviceInfo.availableDevices(QAudio.AudioOutput)
+            self.output_dev_box = QComboBox()
+            for dev in self.out_devs:
+                if self.output_dev_box.findText(dev.deviceName()) == -1:
+                    self.output_dev_box.addItem(dev.deviceName())
+            self.output_dev_box.currentIndexChanged.connect(self.set_output_dev)
+            self.selected_dev = None
+            self.set_output_dev(0)
+            self.layout.addWidget(self.record_out_label)
+            self.layout.addWidget(self.output_dev_box)
+
         # RECORD_DIR
         self.record_dir = os.path.abspath(RECORD_DIR)
         self.record_dir_button = QPushButton("Change Recording Directory")
@@ -312,7 +325,7 @@ class AudioRecorder(QGroupBox):
         self.layout.addWidget(self.automatic_checkbox)
 
         if PYGAME_AVAILABLE:
-            self.mic_checkbox = QCheckBox("Output to VB-Audio Virtual Cable")
+            self.mic_checkbox = QCheckBox("Auto-play output to selected output device")
             self.layout.addWidget(self.mic_checkbox)
             self.mic_checkbox.stateChanged.connect(self.update_init_audio)
         
@@ -338,7 +351,7 @@ class AudioRecorder(QGroupBox):
 
     def update_init_audio(self):
         if PYGAME_AVAILABLE:
-            mixer.init(devicename = 'CABLE Input (VB-Audio Virtual Cable)')
+            mixer.init(devicename = self.selected_dev.deviceName())
             if self.mic_checkbox.isChecked():
                 self.ui_parent.mic_state = True
             else:
@@ -346,6 +359,12 @@ class AudioRecorder(QGroupBox):
 
     def set_input_dev(self, idx):
         self.recorder.setAudioInput(self.recorder.audioInputs()[idx])
+
+    def set_output_dev(self, idx):
+        self.selected_dev = self.out_devs[idx]
+        if mixer.get_init() is not None:
+            mixer.quit()
+            mixer.init(devicename = self.selected_dev.deviceName())
 
     def record_dir_dialog(self):
         temp_record_dir = QFileDialog.getExistingDirectory(self,
