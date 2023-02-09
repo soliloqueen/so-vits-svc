@@ -15,7 +15,8 @@ from mel_processing import mel_spectrogram_torch
 import logging
 logging.getLogger('numba').setLevel(logging.WARNING)
 
-import parselmouth
+#import parselmouth
+import crepe
 import librosa
 import numpy as np
 
@@ -26,16 +27,11 @@ def get_f0(path,p_len=None, f0_up_key=0):
         p_len = x.shape[0]//320
     else:
         assert abs(p_len-x.shape[0]//320) < 3, (path, p_len, x.shape)
+    
     time_step = 320 / 32000 * 1000
-    f0_min = 75
-    f0_max = 1100
-    f0_mel_min = 1127 * np.log(1 + f0_min / 700)
-    f0_mel_max = 1127 * np.log(1 + f0_max / 700)
-
-    f0 = parselmouth.Sound(x, 32000).to_pitch_cc(
-        time_step=time_step / 1000, voicing_threshold=0.4,
-        pitch_floor=f0_min, pitch_ceiling=f0_max).selected_array['frequency']
-
+    
+    f0 = crepe.predict(x, 32000=32000, viterbi=True)[0]
+    
     pad_size=(p_len - len(f0) + 1) // 2
     if(pad_size>0 or p_len - len(f0) - pad_size>0):
         f0 = np.pad(f0,[[pad_size,p_len - len(f0) - pad_size]], mode='constant')

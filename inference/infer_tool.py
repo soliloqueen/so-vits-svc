@@ -9,7 +9,8 @@ import librosa
 import maad
 import numpy as np
 # import onnxruntime
-import parselmouth
+# import parselmouth
+import crepe
 import soundfile
 import torch
 import torchaudio
@@ -117,14 +118,9 @@ def get_f0_old(x, p_len,f0_up_key=0):
 def get_f0_new(x, p_len,f0_up_key=0):
 
     time_step = 160 / 16000 * 1000
-    f0_min = 75
-    f0_max = 1100
-    f0_mel_min = 1127 * np.log(1 + f0_min / 700)
-    f0_mel_max = 1127 * np.log(1 + f0_max / 700)
 
-    f0 = parselmouth.Sound(x, 16000).to_pitch_cc(
-        time_step=time_step / 1000, voicing_threshold=0.4,
-        pitch_floor=f0_min, pitch_ceiling=f0_max).selected_array['frequency']
+    f0 = crepe.predict(x, 16000=16000, viterbi=True)[0]
+        
     if len(f0) > p_len:
         f0 = f0[:p_len]
     pad_size=(p_len - len(f0) + 1) // 2
