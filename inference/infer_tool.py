@@ -9,7 +9,7 @@ import librosa
 import maad
 import numpy as np
 # import onnxruntime
-# import parselmouth
+import parselmouth
 import crepe
 import soundfile
 import torch

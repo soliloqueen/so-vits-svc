@@ -10,6 +10,7 @@ import maad
 import numpy as np
 from inference import slicer
 import parselmouth
+import crepe
 import soundfile
 import torch
 import torchaudio

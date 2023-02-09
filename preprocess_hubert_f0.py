@@ -15,7 +15,7 @@ from mel_processing import mel_spectrogram_torch
 import logging
 logging.getLogger('numba').setLevel(logging.WARNING)
 
-#import parselmouth
+import parselmouth
 import crepe
 import librosa
 import numpy as np
