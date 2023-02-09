@@ -119,7 +119,7 @@ def get_f0_new(x, p_len,f0_up_key=0):
 
     time_step = 160 / 16000 * 1000
 
-    f0 = crepe.predict(x, sr=16000, viterbi=True)[0]
+    f0 = crepe.predict(x, sr=16000, viterbi=False)[1]
         
     if len(f0) > p_len:
         f0 = f0[:p_len]
