@@ -30,7 +30,7 @@ def get_f0(path,p_len=None, f0_up_key=0):
     
     time_step = 320 / 32000 * 1000
     
-    f0 = crepe.predict(x, 32000=32000, viterbi=True)[0]
+    f0 = crepe.predict(x, sr=32000, viterbi=True)[0]
     
     pad_size=(p_len - len(f0) + 1) // 2
     if(pad_size>0 or p_len - len(f0) - pad_size>0):
