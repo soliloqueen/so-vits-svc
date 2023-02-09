@@ -37,7 +37,7 @@ def get_f0(x, p_len,f0_up_key=0):
     f0_mel_max = 1127 * np.log(1 + f0_max / 700)
 
     f0 = parselmouth.Sound(x, 16000).to_pitch_cc(
-        time_step=time_step / 1000, voicing_threshold=0.3,
+        time_step=time_step / 1000, voicing_threshold=0.4,
         pitch_floor=f0_min, pitch_ceiling=f0_max).selected_array['frequency']
 
     pad_size=(p_len - len(f0) + 1) // 2
